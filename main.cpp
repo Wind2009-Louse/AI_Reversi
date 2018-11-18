@@ -472,7 +472,7 @@ int main() {
 			else {
 				int step;
 				string ip;
-				while (true) {
+				while (true) { 
 					cout << "轮到你" << your << "下棋，请输入对应落位的字母：";
 					cin >> ip;
 					if (ip.size() > 1) {
