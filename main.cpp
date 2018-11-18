@@ -288,6 +288,7 @@ struct Board {
 			not_empty_count++;
 			// simple importance
 			double importance = 0.4;
+			// at the corner
 			if ((_x == 0 || _x == BOARD_SIZE - 1) && (_y == 0 || _y == BOARD_SIZE - 1)) {
 				importance *= 5;
 			}
@@ -411,6 +412,13 @@ struct Board {
 		double power = MOVE_INITIAL_POWER * (1 - pow(not_empty_count, 3) / pow(BOARD_SIZE, 6));
 		bot_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(bot_move_power / total_power), power);
 		player_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(player_move_power / total_power), power);
+		// unable to move
+		if (bot_move_power == 1) {
+			player_move_power = pow(player_move_power, 2);
+		}
+		else if (player_move_power == 1) {
+			bot_move_power = pow(bot_move_power, 2);
+		}
 		double _temp = bot_move_power + player_move_power;
 		double result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
 		if (is_current) {
@@ -439,7 +447,12 @@ int main() {
 			cout << "请选择先后(0=先手, 1=后手):";
 			cin >> mode;
 			if (mode < 0 || mode > 1) {
-				cout << "Illegal!" << endl;
+				cout << "Illegal input!" << endl;
+				if (cin.fail()) {
+					cin.sync();
+					cin.clear();
+					cin.ignore();
+				}
 				mode = -1;
 			}
 		}
@@ -477,6 +490,11 @@ int main() {
 					cin >> ip;
 					if (ip.size() > 1) {
 						cout << "Illgeal!" << endl;
+						if (cin.fail()) {
+							cin.sync();
+							cin.clear();
+							cin.ignore();
+						}
 						continue;
 					}
 					else {
@@ -510,6 +528,11 @@ int main() {
 			cin >> mode;
 			if (mode < 0 || mode > 1) {
 				cout << "Illegal!" << endl;
+				if (cin.fail()) {
+					cin.sync();
+					cin.clear();
+					cin.ignore();
+				}
 				mode = -1;
 			}
 		}
