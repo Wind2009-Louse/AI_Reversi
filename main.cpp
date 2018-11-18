@@ -288,12 +288,11 @@ struct Board {
 			not_empty_count++;
 			// simple importance
 			double importance = 0.4;
-			// at the corner
 			if ((_x == 0 || _x == BOARD_SIZE - 1) && (_y == 0 || _y == BOARD_SIZE - 1)) {
 				importance *= 5;
 			}
-			else  {
-				int to_edge_x = min(abs(_x - 1), abs(_x - (BOARD_SIZE-1)));
+			else {
+				int to_edge_x = min(abs(_x - 1), abs(_x - (BOARD_SIZE - 1)));
 				int to_edge_y = min(abs(_y - 1), abs(_y - (BOARD_SIZE - 1)));
 				// near corner
 				if (to_edge_x < 2 && to_edge_y < 2) {
@@ -402,7 +401,7 @@ struct Board {
 			player_move_power *= 0.9;
 		}
 		else {
-			player_move_power = next_possible().size(); 
+			player_move_power = next_possible().size();
 			is_on_bot = !is_on_bot;
 			bot_move_power = next_possible().size();
 			is_on_bot = !is_on_bot;
@@ -412,13 +411,6 @@ struct Board {
 		double power = MOVE_INITIAL_POWER * (1 - pow(not_empty_count, 3) / pow(BOARD_SIZE, 6));
 		bot_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(bot_move_power / total_power), power);
 		player_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(player_move_power / total_power), power);
-		// unable to move
-		if (bot_move_power == 1) {
-			player_move_power = pow(player_move_power, 2);
-		}
-		else if (player_move_power == 1) {
-			bot_move_power = pow(bot_move_power, 2);
-		}
 		double _temp = bot_move_power + player_move_power;
 		double result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
 		if (is_current) {
@@ -434,9 +426,7 @@ struct Board {
 			cout << "玩家评估值：（" << -player_value << ", " << player_move_power << ")" << endl;
 			cout << "总评估值：" << result << "。" << endl;
 		}
-		else {
-			return result;
-		}
+		return result;
 	}
 };
 
