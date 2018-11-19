@@ -882,20 +882,13 @@ int hereditary() {
 		huge_one->huge_variation();
 		current_hereditary.push_back(small_one);
 		current_hereditary.push_back(huge_one);
-		// delete old ones
-		vector<int> old_index;
-		for (int i = current_hereditary.size() - 1; i >= 0; ++i) {
-			if (current_hereditary[i]->total_play >= 60) {
-				old_index.push_back(i);
+		// update old ones
+		for (int i = 0; i < current_hereditary.size(); ++i) {
+			Hereditary* this_one = current_hereditary[i];
+			if (this_one->total_play >= 60) {
+				this_one->total_play = 0;
+				this_one->total_win = 0;
 			}
-		}
-		for (int i = 0; i < old_index.size(); ++i) {
-			Hereditary* this_her = current_hereditary[i];
-			Hereditary* new_her = new Hereditary(this_her);
-			new_her->small_variation();
-			delete this_her;
-			current_hereditary.erase(current_hereditary.begin() + i);
-			current_hereditary.push_back(new_her);
 		}
 	}
 	
