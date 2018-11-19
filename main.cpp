@@ -3,16 +3,21 @@
 #include <vector>
 #include <stack>
 #include <algorithm>
+#include "omp.h"
+#include <stdlib.h>// rand
+#include <ctime>
+#include <fstream>
 using namespace std;
 
 #define BOT_PIECE 1
 #define PLAYER_PIECE -1
 #define EMPTY_PIECE 0
 
-#define BOARD_SIZE 8
-#define FINAL_POWER 10000
+#define BOARD_SIZE 6
+#define FINAL_POWER 100
+#define HEREDITART_PER_THREAD 3
 
-#define SEARCH_MAX_DEPTH 7 // search depth
+#define SEARCH_MAX_DEPTH 8 // search depth
 #define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
@@ -24,11 +29,181 @@ const vector<string> full_alpha_list = { "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ
 const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
+double get_range_rand(double rand_min, double rand_max) {
+	double range = rand_max - rand_min;
+	const int rand_split = 100000;
+	double rand_num = (double)(rand() % rand_split) / rand_split;
+	return (rand_min + range*rand_num);
+}
 
 template<typename T> int find_in_vector(vector<T> v, T f) {
 	for (int i = 0; i < v.size(); ++i)
 		if (v[i] == f) return i;
 	return -1;
+}
+
+struct Hereditary {
+	// move diff
+	double move_initial_power;
+	double move_diff_power;
+
+	// power
+	double corner_power;
+	double edge_power;
+	double near_corner_power;
+	double near_edge_power;
+	
+	// stable & unstable
+	double stable_power;
+	double fake_stable_power;
+	double unstable_power;
+
+	// else
+	double non_current_move_power;
+	double importance_power;
+
+	unsigned int total_win;
+	unsigned int total_play;
+
+	Hereditary() {
+		ifstream ifile;
+		ifile.open("Hereditary.txt");
+		if (ifile.is_open()) {
+			vector<double> powers;
+			while (!ifile.eof()) {
+				double temp;
+				ifile >> temp;
+				powers.push_back(temp);
+			}
+			ifile.close();
+			if (powers.size() == 11) {
+				move_initial_power = powers[0];
+				move_diff_power = powers[1];
+				corner_power = powers[2];
+				edge_power = powers[3];
+				near_corner_power = powers[4];
+				near_edge_power = powers[5];
+				stable_power = powers[6];
+				fake_stable_power = powers[7];
+				unstable_power = powers[8];
+				non_current_move_power = powers[9];
+				importance_power = powers[10];
+				total_play = 0;
+				total_win = 0;
+				cout << "Read from file!" << endl;
+				return;
+			}
+		}
+		ifile.close();
+		move_initial_power = MOVE_INITIAL_POWER;
+		move_diff_power = MOVE_DIFF_POWER;
+		corner_power = 3;
+		edge_power = 2;
+		near_corner_power = 0.1;
+		near_edge_power = 0.2;
+		stable_power = 10;
+		fake_stable_power = 2;
+		unstable_power = 0.1;
+		non_current_move_power = 0.9;
+		importance_power = 1.5;
+
+		total_win = 0;
+		total_play = 0;
+	}
+	Hereditary(Hereditary* copy) {
+		move_initial_power = copy->move_initial_power;
+		move_diff_power = copy->move_diff_power;
+		corner_power = copy->corner_power;
+		edge_power = copy->edge_power;
+		near_corner_power = copy->near_corner_power;
+		near_edge_power = copy->near_edge_power;
+		stable_power = copy->stable_power;
+		fake_stable_power = copy->fake_stable_power;
+		unstable_power = copy->unstable_power;
+		non_current_move_power = copy->non_current_move_power;
+		importance_power = copy->importance_power;
+		total_win = 0;
+		total_play = 0;
+	}
+
+	// 0.8~1.25
+	void small_variation() {
+		variation(0.8, 1.25);
+	}
+
+	// 0.5~2
+	void huge_variation() {
+		variation(0.5, 2);
+	}
+
+	void variation(double range_min, double range_max) {
+		move_initial_power *= get_range_rand(range_min, range_max);
+		move_diff_power *= get_range_rand(range_min, range_max);
+		corner_power *= get_range_rand(range_min, range_max);
+		edge_power *= get_range_rand(range_min, range_max);
+		near_corner_power *= get_range_rand(range_min, range_max);
+		near_edge_power *= get_range_rand(range_min, range_max);
+		stable_power *= get_range_rand(range_min, range_max);
+		fake_stable_power *= get_range_rand(range_min, range_max);
+		unstable_power *= get_range_rand(range_min, range_max);
+		non_current_move_power *= get_range_rand(range_min, range_max);
+		importance_power *= get_range_rand(range_min, range_max);
+	}
+
+	double win_rate() {
+		if (total_play == 0) {
+			throw;
+		}
+		return (double)total_win / (double)total_play;
+	}
+};
+
+bool hereditary_cmp(Hereditary* h1, Hereditary* h2) {
+	return h1->win_rate() > h2->win_rate();
+};
+
+Hereditary* get_hereditary() {
+	Hereditary* initial_her = new Hereditary();
+	int mode = -1;
+	while (mode == -1) {
+		cout << "默认遗传子(0) / 设定遗传子(1）:";
+		cin >> mode;
+		if (mode < 0 || mode > 1) {
+			cout << "Illegal input!" << endl;
+			if (cin.fail()) {
+				cin.sync();
+				cin.clear();
+				cin.ignore();
+			}
+			mode = -1;
+		}
+	}
+	// set Hereditary
+	if (mode == 1) {
+		cout << "move_initial_power:";
+		cin >> initial_her->move_initial_power;
+		cout << "move_diff_power:";
+		cin >> initial_her->move_diff_power;
+		cout << "corner_power:";
+		cin >> initial_her->corner_power;
+		cout << "edge_power";
+		cin >> initial_her->edge_power;
+		cout << "near_corner_power:";
+		cin >> initial_her->near_corner_power;
+		cout << "near_edge_power:";
+		cin >> initial_her->near_edge_power;
+		cout << "stable_power:";
+		cin >> initial_her->stable_power;
+		cout << "fake_stable_power:";
+		cin >> initial_her->fake_stable_power;
+		cout << "unstable_power:";
+		cin >> initial_her->unstable_power;
+		cout << "non_current_move_power:";
+		cin >> initial_her->non_current_move_power;
+		cout << "importance_power:";
+		cin >> initial_her->importance_power;
+	}
+	return initial_her;
 }
 
 struct Board {
@@ -37,9 +212,8 @@ struct Board {
 	short board[BOARD_SIZE * BOARD_SIZE];
 	bool is_bot_first;
 	bool is_on_bot;
-	Board* last_board;
 	int search_depth;
-	int unmoveable_count;
+	Hereditary* herediatry;
 	vector<short> except_steps;
 
 	Board(bool bot_first = false) {
@@ -47,7 +221,6 @@ struct Board {
 		beta = SHRT_MAX;
 		is_on_bot = bot_first;
 		is_bot_first = bot_first;
-		last_board = NULL;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) board[i]=EMPTY_PIECE;
 		short black = bot_first ? BOT_PIECE : PLAYER_PIECE;
 		short white = bot_first ? PLAYER_PIECE : BOT_PIECE;
@@ -57,7 +230,23 @@ struct Board {
 		onboard(upleft, upleft+1) = white;
 		onboard(upleft+1, upleft) = white;
 		search_depth = -1;
-		unmoveable_count = 0;
+		herediatry = new Hereditary;
+	}
+	Board(Hereditary* her, bool bot_first = false) {
+		alpha = SHRT_MIN;
+		beta = SHRT_MAX;
+		is_on_bot = bot_first;
+		is_bot_first = bot_first;
+		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) board[i] = EMPTY_PIECE;
+		short black = bot_first ? BOT_PIECE : PLAYER_PIECE;
+		short white = bot_first ? PLAYER_PIECE : BOT_PIECE;
+		short upleft = BOARD_SIZE / 2 - 1;
+		onboard(upleft, upleft) = black;
+		onboard(upleft + 1, upleft + 1) = black;
+		onboard(upleft, upleft + 1) = white;
+		onboard(upleft + 1, upleft) = white;
+		search_depth = -1;
+		herediatry = her;
 	}
 	Board(Board* b) {
 		alpha = b->alpha;
@@ -65,9 +254,8 @@ struct Board {
 		memcpy_s(board, BOARD_SIZE * BOARD_SIZE * sizeof(short), b->board, BOARD_SIZE * BOARD_SIZE * sizeof(short));
 		is_on_bot = b->is_on_bot;
 		is_bot_first = b->is_bot_first;
-		last_board = b;
 		search_depth = b->search_depth;
-		unmoveable_count = b->unmoveable_count;
+		herediatry = b->herediatry;
 	}
 	// x,y's range: 0~5
 	short& onboard(int x, int y) {
@@ -190,7 +378,7 @@ struct Board {
 			}
 		}
 	}
-	void bot_on_idel_step() {
+	short bot_on_idel_step(bool debug = true) {
 		int empty_count = BOARD_SIZE*BOARD_SIZE;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
 			if (board[i] != EMPTY_PIECE) empty_count--;
@@ -206,10 +394,13 @@ struct Board {
 		beta = DBL_MAX;
 		vector<short> next_steps = next_possible();
 		pair<int, double> expection = get_self_value();
-		cout << "电脑认为能够达到的期望值：" << expection.second << endl;
-		int next_step_id = next_steps[expection.first];
-		cout << "电脑下子：(" << 1+next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")。" << endl;
+		short next_step_id = next_steps[expection.first];
+		if (debug) {
+			cout << "电脑认为能够达到的期望值：" << expection.second << endl;
+			cout << "电脑下子：(" << 1 + next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")。" << endl;
+		}
 		new_step(next_step_id);
+		return next_step_id;
 	}
 	// <from which children(index of vector), value>
 	pair<int,double> get_self_value() {
@@ -249,9 +440,9 @@ struct Board {
 			pair<int,double> next_value = next_board->get_self_value();
 			delete next_board;
 			if ((result.first != -2) && 
-				((result.first == -1) ||
-				(is_on_bot && result.second < next_value.second) ||
-					(!is_on_bot && result.second > next_value.second)) )
+				((result.first == -1) || 
+				(result.second < next_value.second && is_on_bot) ||
+					(result.second > next_value.second && !is_on_bot)) )
 			{
 				result.first = i;
 				result.second = next_value.second;
@@ -287,24 +478,25 @@ struct Board {
 			}
 			not_empty_count++;
 			// simple importance
-			double importance = 0.4;
-			if ((_x == 0 || _x == BOARD_SIZE - 1) && (_y == 0 || _y == BOARD_SIZE - 1)) {
-				importance *= 5;
+			double importance = 1;
+			int to_edge_x = min(abs(_x - 0), abs(_x - (BOARD_SIZE - 1)));
+			int to_edge_y = min(abs(_y - 0), abs(_y - (BOARD_SIZE - 1)));
+			// corner
+			if (to_edge_x == 0 && to_edge_y == 0){
+				importance *= herediatry->corner_power;
 			}
 			else {
-				int to_edge_x = min(abs(_x - 1), abs(_x - (BOARD_SIZE - 1)));
-				int to_edge_y = min(abs(_y - 1), abs(_y - (BOARD_SIZE - 1)));
 				// near corner
 				if (to_edge_x < 2 && to_edge_y < 2) {
-					importance *= 0.1;
+					importance *= herediatry->near_corner_power;
 				}
 				// near the edge
-				else if (to_edge_x < 2 || to_edge_y < 2) {
-					importance *= 0.5;
+				else if (to_edge_x == 1 || to_edge_y == 1) {
+					importance *= herediatry->near_edge_power;
 				}
 				// at the edge
 				else if (_x == 0 || _x == BOARD_SIZE - 1 || _y == 0 || _y == BOARD_SIZE - 1) {
-					importance *= 3;
+					importance *= herediatry->edge_power;
 				}
 			}
 			// stable importance
@@ -366,7 +558,7 @@ struct Board {
 				}
 			}
 			if (is_unstable) {
-				importance *= 0.1;
+				importance *= herediatry->unstable_power;
 			}
 			else if (is_stable) {
 				if (is_current) {
@@ -377,16 +569,16 @@ struct Board {
 						player_stables.push_back(_y*BOARD_SIZE + _x);
 					}
 				}
-				importance *= 5;
+				importance *= herediatry->stable_power;
 			}
 			else if (is_fake_stable) {
-				importance *= 2;
+				importance *= herediatry->fake_stable_power;
 			}
 			if (this_piece == BOT_PIECE) {
-				bot_value += this_piece * pow(1.5, importance);
+				bot_value += this_piece * pow(herediatry->importance_power, importance);
 			}
 			else {
-				player_value += this_piece * pow(1.5, importance);
+				player_value += this_piece * pow(herediatry->importance_power, importance);
 			}
 		}
 
@@ -398,14 +590,14 @@ struct Board {
 			is_on_bot = !is_on_bot;
 			player_move_power = next_possible().size();
 			is_on_bot = !is_on_bot;
-			player_move_power *= 0.9;
+			player_move_power *= herediatry->non_current_move_power;
 		}
 		else {
 			player_move_power = next_possible().size();
 			is_on_bot = !is_on_bot;
 			bot_move_power = next_possible().size();
 			is_on_bot = !is_on_bot;
-			bot_move_power *= 0.9;
+			bot_move_power *= herediatry->non_current_move_power;
 		}
 		double total_power = player_move_power + bot_move_power;
 		double power = MOVE_INITIAL_POWER * (1 - pow(not_empty_count, 3) / pow(BOARD_SIZE, 6));
@@ -430,8 +622,9 @@ struct Board {
 	}
 };
 
-int main() {
+int pvc() {
 	while (true) {
+		Hereditary* initial_her = get_hereditary();
 		int mode = -1;
 		while (mode == -1) {
 			cout << "请选择先后(0=先手, 1=后手):";
@@ -447,7 +640,7 @@ int main() {
 			}
 		}
 		string your = (mode) ? "(白子○)" : "(黑子●)";
-		Board* current = new Board(mode == 1);
+		Board* current = new Board(initial_her,mode == 1);
 		while (true) {
 			cout << endl;
 			cout << "--------------------------------------" << endl;
@@ -529,5 +722,171 @@ int main() {
 		if (mode == 0) break;
 		cout << endl;
 	}
+	return 0;
+}
+
+void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false) {
+	her_first->total_play += 2;
+	her_second->total_play += 2;
+	Board* first_board = new Board(her_first, true);
+	Board* second_board = new Board(her_second, false);
+	bool is_on_first = true;
+	// play
+	while (true) {
+		if (debug) {
+			cout << "--------------------------------------" << endl;
+			first_board->print();
+		}
+		Board* current_board = (is_on_first) ? first_board : second_board;
+		Board* next_board = (!is_on_first) ? first_board : second_board;
+		vector<short> current_steps = current_board->next_possible();
+		if (current_steps.size() != 0) {
+			if (debug) {
+				string piece = (is_on_first) ? "●" : "○";
+				cout << "当前执棋：" << piece << endl;
+			}
+			short step = current_board->bot_on_idel_step(debug);
+			next_board->new_step(step);
+		}
+		else {
+			// end?
+			vector<short> next_steps = current_board->enemy_possible();
+			if (next_steps.size() == 0) {
+				break;
+			}
+			else {
+				// no space to play
+				// switch
+				current_board->is_on_bot = !current_board->is_on_bot;
+				next_board->is_on_bot = !next_board->is_on_bot;
+				if (debug) {
+					cout << "无子可下！" << endl;
+				}
+			}
+		}
+		is_on_first = !is_on_first;
+	}
+	// calculate score
+	double first_score = first_board->get_self_value().second / FINAL_POWER;
+	double second_score = second_board->get_self_value().second / FINAL_POWER;
+	delete first_board;
+	delete second_board;
+	if (first_score * second_score > 0) {
+		cout << "Error score!" << endl;
+		system("pause");
+		throw;
+	}
+	if (first_score > 0) {
+		if (debug) {
+			cout << "本局结束，黑子胜。比分：" << first_score << endl;
+		}
+		her_first->total_win += 2;
+	}
+	else if (second_score > 0) {
+		if (debug) {
+			cout << "本局结束，白子胜。比分：" << second_score << endl;
+		}
+		her_second->total_win += 2;
+	}
+	else {
+		if (debug) {
+			cout << "平局，" << endl;
+		}
+		her_first->total_win++;
+		her_second->total_win ++;
+	}
+}
+
+int hereditary() {
+	srand(time(NULL));
+	int max_her = omp_get_max_threads() * HEREDITART_PER_THREAD;
+	ofstream ofile("wins.csv");
+	if (!ofile.is_open()) {
+		cout << "Unable to write data!" << endl;
+		ofile.close();
+		return 0;
+	}
+	ofile << "Times,move_initial_power,move_diff_power,";
+	ofile << "corner_power,edge_power,near_corner_power,near_edge_power,";
+	ofile << "stable_power,fake_stable_power,unstable_power,";
+	ofile << "non_current_move_power,importance_power,win_rate,total_battle" << endl;
+	Hereditary* initial_her = get_hereditary();
+
+	// initial
+	vector<Hereditary*> current_hereditary;
+	current_hereditary.push_back(initial_her);
+	for (int i = 1; i < max_her; ++i) {
+		Hereditary* copy = new Hereditary(initial_her);
+		copy->huge_variation();
+		current_hereditary.push_back(copy);
+	}
+	// begin
+	int loop_times = 0;
+	Hereditary* last_best = NULL;
+	while (loop_times++ < 10000) {
+		cout << endl << "Running the " << loop_times << "times.." << endl;
+		random_shuffle(current_hereditary.begin(), current_hereditary.end());
+		// play with each other
+		int rand_spector = rand() % (max_her / HEREDITART_PER_THREAD);
+#pragma omp parallel for
+		for (int i = 0; i < (max_her/ HEREDITART_PER_THREAD); ++i) {
+			play_with_her(current_hereditary[i * 3], current_hereditary[i * 3 + 1], (i == rand_spector));
+			play_with_her(current_hereditary[i * 3 + 1], current_hereditary[i * 3], (i == rand_spector));
+			play_with_her(current_hereditary[i * 3 + 1], current_hereditary[i * 3 + 2], (i == rand_spector));
+			play_with_her(current_hereditary[i * 3 + 2], current_hereditary[i * 3 + 1], (i == rand_spector));
+			play_with_her(current_hereditary[i * 3], current_hereditary[i * 3 + 2], (i == rand_spector));
+			play_with_her(current_hereditary[i * 3 + 2], current_hereditary[i * 3], (i == rand_spector));
+		}
+		// count
+		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
+		Hereditary* best_one = current_hereditary[0];
+		if (best_one != last_best) {
+			last_best = best_one;
+		}
+		ofile << loop_times << ",";
+		ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
+		ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
+		ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
+		ofile << best_one->non_current_move_power << "," << best_one->importance_power << "," << best_one->win_rate() << "," << best_one->total_play << endl;
+		// drop
+		delete current_hereditary[max_her - 2];
+		delete current_hereditary[max_her - 1];
+		current_hereditary.pop_back();
+		current_hereditary.pop_back();
+		Hereditary* small_one = new Hereditary(best_one);
+		Hereditary* huge_one = new Hereditary(best_one);
+		small_one->small_variation();
+		huge_one->huge_variation();
+		current_hereditary.push_back(small_one);
+		current_hereditary.push_back(huge_one);
+	}
+	
+	ofile.close();
+	system("pause");
+	return 0;
+}
+
+int main() {
+	int mode = -1;
+	while (mode == -1) {
+		cout << "请选择模式(0=训练, 1=人机):";
+		cin >> mode;
+		if (mode < 0 || mode > 1) {
+			cout << "Illegal input!" << endl;
+			if (cin.fail()) {
+				cin.sync();
+				cin.clear();
+				cin.ignore();
+			}
+			mode = -1;
+		}
+	}
+	if (mode == 0) {
+		hereditary();
+	}
+	else {
+		pvc();
+	}
+	
 	return 0;
 }
