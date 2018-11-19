@@ -7,6 +7,7 @@
 #include <stdlib.h>// rand
 #include <ctime>
 #include <fstream>
+#include <sstream>
 using namespace std;
 
 #define BOT_PIECE 1
@@ -225,10 +226,10 @@ struct Board {
 		short black = bot_first ? BOT_PIECE : PLAYER_PIECE;
 		short white = bot_first ? PLAYER_PIECE : BOT_PIECE;
 		short upleft = BOARD_SIZE / 2 - 1;
-		onboard(upleft, upleft) = black;
-		onboard(upleft+1, upleft+1) = black;
-		onboard(upleft, upleft+1) = white;
-		onboard(upleft+1, upleft) = white;
+		onboard(upleft, upleft) = -black;
+		onboard(upleft+1, upleft+1) = -black;
+		onboard(upleft, upleft+1) = -white;
+		onboard(upleft+1, upleft) = -white;
 		search_depth = -1;
 		herediatry = new Hereditary;
 	}
@@ -624,6 +625,7 @@ struct Board {
 
 int pvc() {
 	while (true) {
+		vector<short> record;
 		Hereditary* initial_her = get_hereditary();
 		int mode = -1;
 		while (mode == -1) {
@@ -656,6 +658,7 @@ int pvc() {
 					if (!current->is_on_bot) {
 						system("pause");
 					}
+					record.push_back(-1);
 					current->is_on_bot = !current->is_on_bot;
 					continue;
 				}
@@ -663,7 +666,8 @@ int pvc() {
 			current->calculate_current_value(true);
 			if (current->is_on_bot) {
 				cout << "电脑思考中..." << endl;
-				current->bot_on_idel_step();
+				short this_record = current->bot_on_idel_step();
+				record.push_back(this_record);
 			}
 			else {
 				int step;
@@ -700,11 +704,24 @@ int pvc() {
 					break;
 				}
 				current->new_step(list[step]);
+				record.push_back(list[step]);
 			}
 
 		}
 		double value = current->get_self_value().second;
 		cout << "你的最终得分：" << -value / FINAL_POWER << endl;
+		cout << "棋谱：";
+		for (int i = 0; i < record.size(); ++i) {
+			short this_one = record[i];
+			if (this_one == -1) cout << "-,";
+			else {
+				char first = (this_one%BOARD_SIZE) + 'a';
+				char second = (this_one / BOARD_SIZE) + '0';
+				cout << first << second << ",";
+			}
+			if (i % 10 == 9) cout << endl;
+		}
+		cout << endl;
 		mode = -1;
 		while (mode == -1) {
 			cout << "是否重新开始？(0=否，1=是)";
@@ -798,9 +815,15 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 }
 
 int hereditary() {
-	srand(time(NULL));
 	int max_her = omp_get_max_threads() * HEREDITART_PER_THREAD;
-	ofstream ofile("wins.csv");
+	stringstream ss;
+	ss << "wins_";
+	ss << (rand() % 10000);
+	ss << ".csv";
+	string filename = ss.str();
+	ss.clear();
+	ss.str("");
+	ofstream ofile(filename);
 	if (!ofile.is_open()) {
 		cout << "Unable to write data!" << endl;
 		ofile.close();
@@ -859,6 +882,21 @@ int hereditary() {
 		huge_one->huge_variation();
 		current_hereditary.push_back(small_one);
 		current_hereditary.push_back(huge_one);
+		// delete old ones
+		vector<int> old_index;
+		for (int i = current_hereditary.size() - 1; i >= 0; ++i) {
+			if (current_hereditary[i]->total_play >= 60) {
+				old_index.push_back(i);
+			}
+		}
+		for (int i = 0; i < old_index.size(); ++i) {
+			Hereditary* this_her = current_hereditary[i];
+			Hereditary* new_her = new Hereditary(this_her);
+			new_her->small_variation();
+			delete this_her;
+			current_hereditary.erase(current_hereditary.begin() + i);
+			current_hereditary.push_back(new_her);
+		}
 	}
 	
 	ofile.close();
@@ -867,6 +905,7 @@ int hereditary() {
 }
 
 int main() {
+	srand(time(NULL));
 	int mode = -1;
 	while (mode == -1) {
 		cout << "请选择模式(0=训练, 1=人机):";
