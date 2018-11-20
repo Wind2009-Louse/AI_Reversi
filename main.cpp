@@ -817,13 +817,23 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 int hereditary() {
 	int max_her = omp_get_max_threads() * HEREDITART_PER_THREAD;
 	stringstream ss;
-	ss << "wins_";
-	ss << (rand() % 10000);
-	ss << ".csv";
-	string filename = ss.str();
-	ss.clear();
-	ss.str("");
-	ofstream ofile(filename);
+	ofstream ofile;
+	int file_index = 0;
+	while (true) {
+		ss << "wins_";
+		ss << file_index++;
+		ss << ".csv";
+		string filename = ss.str();
+		ss.clear();
+		ss.str("");
+		ifstream ifile(filename);
+		bool isExist = ifile.is_open();
+		ifile.close();
+		if (!isExist) {
+			ofile.open(filename);
+			break;
+		}
+	}
 	if (!ofile.is_open()) {
 		cout << "Unable to write data!" << endl;
 		ofile.close();
@@ -885,7 +895,7 @@ int hereditary() {
 		// update old ones
 		for (int i = 0; i < current_hereditary.size(); ++i) {
 			Hereditary* this_one = current_hereditary[i];
-			if (this_one->total_play >= 60) {
+			if (this_one->total_play >= 40) {
 				this_one->total_play = 0;
 				this_one->total_win = 0;
 			}
