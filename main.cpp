@@ -127,14 +127,14 @@ struct Hereditary {
 		total_play = 0;
 	}
 
-	// 0.8~1.25
+	// 0.5~2
 	void small_variation() {
-		variation(0.8, 1.25);
+		variation(0.5, 2);
 	}
 
-	// 0.5~2
+	// 0.2~5
 	void huge_variation() {
-		variation(0.5, 2);
+		variation(0.2, 5);
 	}
 
 	void variation(double range_min, double range_max) {
@@ -278,6 +278,7 @@ struct Board {
 					bool find_self = false;
 					short _x = i % BOARD_SIZE + find_dir[j][0];
 					short _y = i / BOARD_SIZE + find_dir[j][1];
+					// find {enemy, enenmy, enemy..., self}
 					while (_x > -1 && _x < BOARD_SIZE && _y > -1 && _y < BOARD_SIZE) {
 						if (onboard(_x, _y) == enemy_piece) {
 							find_enemy = true;
@@ -380,6 +381,7 @@ struct Board {
 		}
 	}
 	short bot_on_idel_step(bool debug = true) {
+		// whether use end search?
 		int empty_count = BOARD_SIZE*BOARD_SIZE;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
 			if (board[i] != EMPTY_PIECE) empty_count--;
@@ -433,7 +435,8 @@ struct Board {
 		if (search_depth == 0) {
 			double value = calculate_current_value();
 			return pair<int, double>(-1, value);
-		}		
+		}	
+		random_shuffle(next_steps.begin(), next_steps.end());
 		for (int i = 0; i < next_steps.size(); ++i) {
 			Board* next_board = new Board(this);
 			next_board->new_step(next_steps[i]);
@@ -455,8 +458,8 @@ struct Board {
 				else if ((beta > result.second) && !is_on_bot) {
 					beta = result.second;
 				}
-				// cut
 			}
+			// cut
 			if (alpha > beta) {
 				result.first = -2;
 				return result;
@@ -510,13 +513,13 @@ struct Board {
 				int check_y = _y + find_dir[i][1];
 				while (check_x >= 0 && check_x < BOARD_SIZE && check_y >= 0 && check_y < BOARD_SIZE) {
 					short piece_check = board[check_y * BOARD_SIZE + check_x] * this_piece;
+					// self
 					if (piece_check == 1) {
-						// self
 						check_x += find_dir[i][0];
 						check_y += find_dir[i][1];
 					}
+					// enemy
 					else if (piece_check == -1) {
-						// enemy
 						enemy_surround++;
 						break;
 					}
@@ -529,8 +532,8 @@ struct Board {
 				check_y = _y - find_dir[i][1];
 				while (check_x >= 0 && check_x < BOARD_SIZE && check_y >= 0 && check_y < BOARD_SIZE) {
 					short piece_check = board[check_y * BOARD_SIZE + check_x] * this_piece;
+					// self
 					if (piece_check == 1) {
-						// self
 						check_x -= find_dir[i][0];
 						check_y -= find_dir[i][1];
 					}
@@ -582,7 +585,6 @@ struct Board {
 				player_value += this_piece * pow(herediatry->importance_power, importance);
 			}
 		}
-
 		// movable check
 		double bot_move_power;
 		double player_move_power;
@@ -706,17 +708,16 @@ int pvc() {
 				current->new_step(list[step]);
 				record.push_back(list[step]);
 			}
-
 		}
 		double value = current->get_self_value().second;
 		cout << "你的最终得分：" << -value / FINAL_POWER << endl;
 		cout << "棋谱：";
 		for (int i = 0; i < record.size(); ++i) {
 			short this_one = record[i];
-			if (this_one == -1) cout << "-,";
+			if (this_one == -1) cout << "- ,";
 			else {
 				char first = (this_one%BOARD_SIZE) + 'a';
-				char second = (this_one / BOARD_SIZE) + '0';
+				char second = (this_one / BOARD_SIZE) + '1';
 				cout << first << second << ",";
 			}
 			if (i % 10 == 9) cout << endl;
@@ -857,7 +858,7 @@ int hereditary() {
 	int loop_times = 0;
 	Hereditary* last_best = NULL;
 	while (loop_times++ < 10000) {
-		cout << endl << "Running the " << loop_times << "times.." << endl;
+		cout << endl << "Running the " << loop_times << " times.." << endl;
 		random_shuffle(current_hereditary.begin(), current_hereditary.end());
 		// play with each other
 		int rand_spector = rand() % (max_her / HEREDITART_PER_THREAD);
