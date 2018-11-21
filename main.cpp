@@ -160,6 +160,9 @@ struct Hereditary {
 };
 
 bool hereditary_cmp(Hereditary* h1, Hereditary* h2) {
+	if (h1->win_rate() == h2->win_rate()) {
+		return h1->total_play > h2->total_play;
+	}
 	return h1->win_rate() > h2->win_rate();
 };
 
