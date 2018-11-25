@@ -1,6 +1,6 @@
 # AI_Reversi
 
-一个用C++编写的黑白棋程序。可以通过根目录的Hereditary.txt设定参数。Hereditary.txt共11行(没有多余的换行)，每行一个小数，分别对应以下参数：
+一个用C++编写的黑白棋程序。可以通过根目录的Hereditary.txt(需自行创建)设定参数。Hereditary.txt共11行(没有多余的换行)，每行一个小数，分别对应以下参数：
 
 * move_initial_power：行动力差距造成的初始影响力。
 * move_diff_power：行动力差距造成的影响力。
