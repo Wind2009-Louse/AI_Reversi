@@ -153,7 +153,7 @@ struct Hereditary {
 
 	double win_rate() {
 		if (total_play == 0) {
-			throw;
+			return 0;
 		}
 		return (double)total_win / (double)total_play;
 	}
@@ -862,7 +862,7 @@ int hereditary() {
 	Hereditary* last_best = NULL;
 	while (loop_times++ < 10000) {
 		cout << endl << "Running the " << loop_times << " times.." << endl;
-		random_shuffle(current_hereditary.begin(), current_hereditary.end());
+		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
 		// play with each other
 		int rand_spector = rand() % (max_her / HEREDITART_PER_THREAD);
 #pragma omp parallel for
