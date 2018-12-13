@@ -464,14 +464,13 @@ struct Board {
 			double value = calculate_current_value();
 			return pair<int, double>(-1, value);
 		}	
-		random_shuffle(next_steps.begin(), next_steps.end());
 		for (int i = 0; i < next_steps.size(); ++i) {
 			Board* next_board = new Board(this);
 			next_board->new_step(next_steps[i]);
 			next_board->search_depth--;
 			pair<int,double> next_value = next_board->get_self_value();
 			delete next_board;
-			if ((result.first != -2) && 
+			if (
 				((result.first == -1) || 
 				(result.second < next_value.second && is_on_bot) ||
 					(result.second > next_value.second && !is_on_bot)) )
@@ -489,7 +488,7 @@ struct Board {
 			}
 			// cut
 			if (alpha > beta) {
-				result.first = -2;
+				//result.first = -2;
 				return result;
 			}
 		}
