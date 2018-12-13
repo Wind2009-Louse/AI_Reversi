@@ -14,11 +14,11 @@ using namespace std;
 #define PLAYER_PIECE -1
 #define EMPTY_PIECE 0
 
-#define BOARD_SIZE 6
+#define BOARD_SIZE 8
 #define FINAL_POWER 100
 #define HEREDITART_PER_THREAD 3
 
-#define SEARCH_MAX_DEPTH 8 // search depth
+#define SEARCH_MAX_DEPTH 7 // search depth
 #define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
@@ -92,6 +92,7 @@ struct Hereditary {
 				total_play = 0;
 				total_win = 0;
 				cout << "Read from file!" << endl;
+				set();
 				return;
 			}
 		}
@@ -110,6 +111,7 @@ struct Hereditary {
 
 		total_win = 0;
 		total_play = 0;
+		set();
 	}
 	Hereditary(Hereditary* copy) {
 		move_initial_power = copy->move_initial_power;
@@ -125,6 +127,7 @@ struct Hereditary {
 		importance_power = copy->importance_power;
 		total_win = 0;
 		total_play = 0;
+		set();
 	}
 
 	// 0.5~2
@@ -135,6 +138,27 @@ struct Hereditary {
 	// 0.2~5
 	void huge_variation() {
 		variation(0.2, 5);
+	}
+	
+	void set() {
+		double total_power_1 = 0;
+		double total_power_2 = 0;
+		total_power_1 += edge_power;
+		total_power_1 += corner_power;
+		total_power_1 += near_edge_power;
+		total_power_1 += near_corner_power;
+		total_power_2 += stable_power;
+		total_power_2 += unstable_power;
+		total_power_2 += fake_stable_power;
+		total_power_1 /= 5;
+		total_power_2 /= 5;
+		edge_power /= total_power_1;
+		corner_power /= total_power_1;
+		near_edge_power /= total_power_1;
+		near_corner_power /= total_power_1;
+		stable_power /= total_power_2;
+		unstable_power /= total_power_2;
+		fake_stable_power /= total_power_2;
 	}
 
 	void variation(double range_min, double range_max) {
@@ -149,6 +173,7 @@ struct Hereditary {
 		unstable_power *= get_range_rand(range_min, range_max);
 		non_current_move_power *= get_range_rand(range_min, range_max);
 		importance_power *= get_range_rand(range_min, range_max);
+		set();
 	}
 
 	double win_rate() {
