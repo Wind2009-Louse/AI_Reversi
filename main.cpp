@@ -18,15 +18,15 @@ using namespace std;
 #define FINAL_POWER 100
 #define HEREDITART_PER_THREAD 3
 
-#define SEARCH_MAX_DEPTH 7 // search depth
+#define SEARCH_MAX_DEPTH 6 // search depth
 #define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
 
-const vector<string> full_alpha_list = { "Ôº°", "Ôº¢", "Ôº£", "Ôº§", "Ôº•", "Ôº¶", "Ôºß",
-									"Ôº®", "Ôº©", "Ôº™", "Ôº´", "Ôº¨", "Ôº≠", "ÔºÆ",
-									"ÔºØ", "Ôº∞", "Ôº±", "Ôº≤", "Ôº≥", "Ôº¥", "Ôºµ",
-									"Ôº∂", "Ôº∑", "Ôº∏", "Ôºπ", "Ôº∫" };
+const vector<string> full_alpha_list = { "£¡", "£¬", "£√", "£ƒ", "£≈", "£∆", "£«",
+									"£»", "£…", "£ ", "£À", "£Ã", "£Õ", "£Œ",
+									"£œ", "£–", "£—", "£“", "£”", "£‘", "£’",
+									"£÷", "£◊", "£ÿ", "£Ÿ", "£⁄" };
 const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
@@ -198,7 +198,7 @@ Hereditary* get_hereditary(string filename = "") {
 	Hereditary* initial_her = new Hereditary(filename);
 	int mode = -1;
 	while (mode == -1) {
-		cout << "ÈªòËÆ§ÈÅó‰º†Â≠ê(0) / ËÆæÂÆöÈÅó‰º†Â≠ê(1Ôºâ:";
+		cout << "ƒ¨»œ“≈¥´◊”(0) / …Ë∂®“≈¥´◊”(1£©:";
 		cin >> mode;
 		if (mode < 0 || mode > 1) {
 			cout << "Illegal input!" << endl;
@@ -336,15 +336,15 @@ struct Board {
 	void print(bool print_optimal = false) {
 		vector<short> optimal;
 		if (print_optimal) optimal = next_possible();
-		string bot_piece = (is_bot_first) ? "‚óè" : "‚óã";
-		string player_piece = (is_bot_first) ? "‚óã" : "‚óè";
+		string bot_piece = (is_bot_first) ? "°Ò" : "°";
+		string player_piece = (is_bot_first) ? "°" : "°Ò";
 		string block = "";
 		for (int i = 0; i < BOARD_SIZE; ++i) {
-			block += "‚îÅ";
+			block += "©•";
 		}
-		cout << "‚îè" << block << "‚îì" << endl;
+		cout << "©≥" << block << "©∑" << endl;
 		for (int _y = 0; _y < BOARD_SIZE; ++_y) {
-			cout << "‚îÉ";
+			cout << "©ß";
 			for (int _x = 0; _x < BOARD_SIZE; ++_x) {
 				short this_board = onboard(_x, _y);
 				if (this_board == BOT_PIECE) {
@@ -357,16 +357,16 @@ struct Board {
 					short this_index = _y * BOARD_SIZE + _x;
 					int find_index = find_in_vector(optimal, this_index);
 					if (find_index == -1) {
-						cout << "„ÄÄ";
+						cout << "°°";
 					}
 					else {
 						cout << full_alpha_list[find_index];
 					}
 				}
 			}
-			cout << "‚îÉ" << endl;
+			cout << "©ß" << endl;
 		}
-		cout << "‚îó" << block << "‚îõ" << endl;
+		cout << "©ª" << block << "©ø" << endl;
 	}
 	vector<short> enemy_possible() {
 		is_on_bot = !is_on_bot;
@@ -430,8 +430,8 @@ struct Board {
 		pair<int, double> expection = get_self_value();
 		short next_step_id = next_steps[expection.first];
 		if (debug) {
-			cout << "ÁîµËÑëËÆ§‰∏∫ËÉΩÂ§üËææÂà∞ÁöÑÊúüÊúõÂÄºÔºö" << expection.second << endl;
-			cout << "ÁîµËÑë‰∏ãÂ≠êÔºö(" << 1 + next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")„ÄÇ" << endl;
+			cout << "µÁƒ‘»œŒ™ƒ‹πª¥ÔµΩµƒ∆⁄Õ˚÷µ£∫" << expection.second << endl;
+			cout << "µÁƒ‘œ¬◊”£∫(" << 1 + next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")°£" << endl;
 		}
 		new_step(next_step_id);
 		return next_step_id;
@@ -639,17 +639,17 @@ struct Board {
 		double _temp = bot_move_power + player_move_power;
 		double result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
 		if (is_current) {
-			cout << "ÂΩìÂâçÁîµËÑëÁ®≥ÂÆöÂ≠êÔºö";
+			cout << "µ±«∞µÁƒ‘Œ»∂®◊”£∫";
 			for (int i = 0; i < bot_stables.size(); ++i) {
 				cout << bot_stables[i] << ",";
 			}
-			cout << endl << "Áé©ÂÆ∂Á®≥ÂÆöÂ≠êÔºö";
+			cout << endl << "ÕÊº“Œ»∂®◊”£∫";
 			for (int i = 0; i < player_stables.size(); ++i) {
 				cout << player_stables[i] << ",";
 			}
-			cout << endl << "ÁîµËÑëËØÑ‰º∞ÂÄºÔºö(" << bot_value << ", " << bot_move_power << ")" << endl;
-			cout << "Áé©ÂÆ∂ËØÑ‰º∞ÂÄºÔºöÔºà" << -player_value << ", " << player_move_power << ")" << endl;
-			cout << "ÊÄªËØÑ‰º∞ÂÄºÔºö" << result << "„ÄÇ" << endl;
+			cout << endl << "µÁƒ‘∆¿π¿÷µ£∫(" << bot_value << ", " << bot_move_power << ")" << endl;
+			cout << "ÕÊº“∆¿π¿÷µ£∫£®" << -player_value << ", " << player_move_power << ")" << endl;
+			cout << "◊‹∆¿π¿÷µ£∫" << result << "°£" << endl;
 		}
 		return result;
 	}
@@ -661,7 +661,7 @@ int pvc() {
 		Hereditary* initial_her = get_hereditary();
 		int mode = -1;
 		while (mode == -1) {
-			cout << "ËØ∑ÈÄâÊã©ÂÖàÂêé(0=ÂÖàÊâã, 1=ÂêéÊâã):";
+			cout << "«Î—°‘Òœ»∫Û(0=œ» ÷, 1=∫Û ÷):";
 			cin >> mode;
 			if (mode < 0 || mode > 1) {
 				cout << "Illegal input!" << endl;
@@ -673,7 +673,7 @@ int pvc() {
 				mode = -1;
 			}
 		}
-		string your = (mode) ? "(ÁôΩÂ≠ê‚óã)" : "(ÈªëÂ≠ê‚óè)";
+		string your = (mode) ? "(∞◊◊”°)" : "(∫⁄◊”°Ò)";
 		Board* current = new Board(initial_her,mode == 1);
 		while (true) {
 			cout << endl;
@@ -686,7 +686,7 @@ int pvc() {
 					break;
 				}
 				else {
-					cout << "Êó†Â≠êÂèØ‰∏ãÔºåÈúÄË¶ÅÂºÉÊùÉ„ÄÇ" << endl;
+					cout << "Œﬁ◊”ø…œ¬£¨–Ë“™∆˙»®°£" << endl;
 					if (!current->is_on_bot) {
 						system("pause");
 					}
@@ -697,7 +697,7 @@ int pvc() {
 			}
 			current->calculate_current_value(true);
 			if (current->is_on_bot) {
-				cout << "ÁîµËÑëÊÄùËÄÉ‰∏≠..." << endl;
+				cout << "µÁƒ‘Àºøº÷–..." << endl;
 				short this_record = current->bot_on_idel_step();
 				record.push_back(this_record);
 			}
@@ -705,7 +705,7 @@ int pvc() {
 				int step;
 				string ip;
 				while (true) { 
-					cout << "ËΩÆÂà∞‰Ω†" << your << "‰∏ãÊ£ãÔºåËØ∑ËæìÂÖ•ÂØπÂ∫îËêΩ‰ΩçÁöÑÂ≠óÊØçÔºö";
+					cout << "¬÷µΩƒ„" << your << "œ¬∆Â£¨«Î ‰»Î∂‘”¶¬‰Œªµƒ◊÷ƒ∏£∫";
 					cin >> ip;
 					if (ip.size() > 1) {
 						cout << "Illgeal!" << endl;
@@ -740,8 +740,8 @@ int pvc() {
 			}
 		}
 		double value = current->get_self_value().second;
-		cout << "‰Ω†ÁöÑÊúÄÁªàÂæóÂàÜÔºö" << -value / FINAL_POWER << endl;
-		cout << "Ê£ãË∞±Ôºö";
+		cout << "ƒ„µƒ◊Ó÷’µ√∑÷£∫" << -value / FINAL_POWER << endl;
+		cout << "∆Â∆◊£∫";
 		for (int i = 0; i < record.size(); ++i) {
 			short this_one = record[i];
 			if (this_one == -1) cout << "- ,";
@@ -755,7 +755,7 @@ int pvc() {
 		cout << endl;
 		mode = -1;
 		while (mode == -1) {
-			cout << "ÊòØÂê¶ÈáçÊñ∞ÂºÄÂßãÔºü(0=Âê¶Ôºå1=ÊòØ)";
+			cout << " «∑Ò÷ÿ–¬ø™ º£ø(0=∑Ò£¨1= «)";
 			cin >> mode;
 			if (mode < 0 || mode > 1) {
 				cout << "Illegal!" << endl;
@@ -790,8 +790,8 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		vector<short> current_steps = current_board->next_possible();
 		if (current_steps.size() != 0) {
 			if (debug) {
-				string piece = (is_on_first) ? "‚óè" : "‚óã";
-				cout << "ÂΩìÂâçÊâßÊ£ãÔºö" << piece << endl;
+				string piece = (is_on_first) ? "°Ò" : "°";
+				cout << "µ±«∞÷¥∆Â£∫" << piece << endl;
 			}
 			short step = current_board->bot_on_idel_step(debug);
 			next_board->new_step(step);
@@ -808,7 +808,7 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 				current_board->is_on_bot = !current_board->is_on_bot;
 				next_board->is_on_bot = !next_board->is_on_bot;
 				if (debug) {
-					cout << "Êó†Â≠êÂèØ‰∏ãÔºÅ" << endl;
+					cout << "Œﬁ◊”ø…œ¬£°" << endl;
 				}
 			}
 		}
@@ -826,19 +826,19 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 	}
 	if (first_score > 0) {
 		if (debug) {
-			cout << "Êú¨Â±ÄÁªìÊùüÔºåÈªëÂ≠êËÉú„ÄÇÊØîÂàÜÔºö" << first_score << endl;
+			cout << "±ææ÷Ω· ¯£¨∫⁄◊” §°£±»∑÷£∫" << first_score << endl;
 		}
 		her_first->total_win += 2;
 	}
 	else if (second_score > 0) {
 		if (debug) {
-			cout << "Êú¨Â±ÄÁªìÊùüÔºåÁôΩÂ≠êËÉú„ÄÇÊØîÂàÜÔºö" << second_score << endl;
+			cout << "±ææ÷Ω· ¯£¨∞◊◊” §°£±»∑÷£∫" << second_score << endl;
 		}
 		her_second->total_win += 2;
 	}
 	else {
 		if (debug) {
-			cout << "Âπ≥Â±ÄÔºå" << endl;
+			cout << "∆Ωæ÷£¨" << endl;
 		}
 		her_first->total_win++;
 		her_second->total_win ++;
@@ -939,20 +939,20 @@ int hereditary() {
 }
 
 int cvc() {
-	cout << "1Âè∑ÁîµËÑë‰ªéHereditary.txt‰∏≠ËØªÂèñÊï∞ÊçÆ„ÄÇ" << endl;
+	cout << "1∫≈µÁƒ‘¥”Hereditary.txt÷–∂¡»° ˝æ›°£" << endl;
 	Hereditary* her_1 = new Hereditary();
 	int mode = -1;
 	while (true) {
 		string filename;
-		cout << "ËØ∑ËæìÂÖ•2Âè∑ÁîµËÑëÈúÄË¶ÅËØªÂèñÁöÑÊï∞ÊçÆÊâÄÂú®ÁöÑÊñá‰ª∂Ôºö";
+		cout << "«Î ‰»Î2∫≈µÁƒ‘–Ë“™∂¡»°µƒ ˝æ›À˘‘⁄µƒŒƒº˛£∫";
 		cin >> filename;
 		Hereditary* her_2 = new Hereditary(filename);
 		play_with_her(her_1, her_2, true);
 		play_with_her(her_2, her_1, true);
-		cout << endl << "ÁªìÊûúÔºö\n1Âè∑ÁîµËÑëËÉúÔºö" << her_1->total_win << endl << "2Âè∑ÁîµËÑëËÉúÔºö" << her_2->total_win << endl;
+		cout << endl << "Ω·π˚£∫\n1∫≈µÁƒ‘ §£∫" << her_1->total_win << endl << "2∫≈µÁƒ‘ §£∫" << her_2->total_win << endl;
 		mode = -1;
 		while (mode == -1) {
-			cout << "ÊòØÂê¶ÈáçÊñ∞ÂºÄÂßãÔºü(0=Âê¶Ôºå1=ÊòØ)";
+			cout << " «∑Ò÷ÿ–¬ø™ º£ø(0=∑Ò£¨1= «)";
 			cin >> mode;
 			if (mode < 0 || mode > 1) {
 				cout << "Illegal!" << endl;
@@ -978,7 +978,7 @@ int main() {
 	srand(time(NULL));
 	int mode = -1;
 	while (mode == -1) {
-		cout << "ËØ∑ÈÄâÊã©Ê®°Âºè(0=ËÆ≠ÁªÉ, 1=‰∫∫Êú∫Ôºå2=ÁîµËÑëÂØπÊàò):";
+		cout << "«Î—°‘Òƒ£ Ω(0=—µ¡∑, 1=»Àª˙£¨2=µÁƒ‘∂‘’Ω):";
 		cin >> mode;
 		if (mode < 0 || mode > 2) {
 			cout << "Illegal input!" << endl;
