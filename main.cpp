@@ -675,6 +675,7 @@ int pvc() {
 		}
 		string your = (mode) ? "(白子○)" : "(黑子●)";
 		Board* current = new Board(initial_her,mode == 1);
+		vector<Board*> board_records;
 		while (true) {
 			cout << endl;
 			cout << "--------------------------------------" << endl;
@@ -702,10 +703,11 @@ int pvc() {
 				record.push_back(this_record);
 			}
 			else {
+				bool rollback = false;
 				int step;
 				string ip;
 				while (true) { 
-					cout << "轮到你" << your << "下棋，请输入对应落位的字母：";
+					cout << "轮到你" << your << "下棋，请输入对应落位的字母，输入Z回滚：";
 					cin >> ip;
 					if (ip.size() > 1) {
 						cout << "Illgeal!" << endl;
@@ -728,20 +730,39 @@ int pvc() {
 							cout << "Illegal!" << endl;
 							continue;
 						}
-						if (step >= list.size()) {
+						if (step == 25) {
+							if (board_records.size() <= 0) {
+								cout << "无法回滚！" << endl;
+								continue;
+							}
+							rollback = true;
+						}
+						else if (step >= list.size()) {
 							cout << "Illgeal!" << endl;
 							continue;
 						}
 					}
 					break;
 				}
-				current->new_step(list[step]);
-				record.push_back(list[step]);
+				if (rollback) {
+					cout << "回滚成功！" << endl;
+					delete current;
+					current = board_records[board_records.size() - 1];
+					board_records.pop_back();
+					record.pop_back();
+					record.pop_back();
+				}
+				else {
+					Board* b_copy = new Board(current);
+					board_records.push_back(b_copy);
+					current->new_step(list[step]);
+					record.push_back(list[step]);
+				}
 			}
 		}
 		double value = current->get_self_value().second;
 		cout << "你的最终得分：" << -value / FINAL_POWER << endl;
-		cout << "棋谱：";
+		cout << "棋谱：" << endl;
 		for (int i = 0; i < record.size(); ++i) {
 			short this_one = record[i];
 			if (this_one == -1) cout << "- ,";
@@ -751,6 +772,9 @@ int pvc() {
 				cout << first << second << ",";
 			}
 			if (i % 10 == 9) cout << endl;
+		}
+		for (int i = 0; i < board_records.size(); ++i) {
+			delete board_records[i];
 		}
 		cout << endl;
 		mode = -1;
