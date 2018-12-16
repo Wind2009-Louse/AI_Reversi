@@ -634,8 +634,8 @@ struct Board {
 		}
 		double total_power = player_move_power + bot_move_power;
 		double power = MOVE_INITIAL_POWER * (1 - pow(not_empty_count, 3) / pow(BOARD_SIZE, 6));
-		bot_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(bot_move_power / total_power), power);
-		player_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(player_move_power / total_power), power);
+		bot_move_power = pow(1 + (herediatry->move_diff_power - 1)*(bot_move_power / total_power), power);
+		player_move_power = pow(1 + (herediatry->move_diff_power - 1)*(player_move_power / total_power), power);
 		double _temp = bot_move_power + player_move_power;
 		double result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
 		if (is_current) {
