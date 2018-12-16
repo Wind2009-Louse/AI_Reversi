@@ -44,6 +44,7 @@ template<typename T> int find_in_vector(vector<T> v, T f) {
 }
 
 struct Hereditary {
+	short type;
 	// move diff
 	double move_initial_power;
 	double move_diff_power;
@@ -66,7 +67,7 @@ struct Hereditary {
 	unsigned int total_win;
 	unsigned int total_play;
 
-	Hereditary(string filename="") {
+	Hereditary(string filename="", short t = 0) {
 		if (filename == "") {
 			filename = "Hereditary.txt";
 		}
@@ -98,6 +99,25 @@ struct Hereditary {
 				set();
 				return;
 			}
+			else if (powers.size() == 12) {
+				type = powers[0];
+				move_initial_power = powers[1];
+				move_diff_power = powers[2];
+				corner_power = powers[3];
+				edge_power = powers[4];
+				near_corner_power = powers[5];
+				near_edge_power = powers[6];
+				stable_power = powers[7];
+				fake_stable_power = powers[8];
+				unstable_power = powers[9];
+				non_current_move_power = powers[10];
+				importance_power = powers[11];
+				total_play = 0;
+				total_win = 0;
+				cout << "Read from file!" << endl;
+				set();
+				return;
+			}
 		}
 		ifile.close();
 		move_initial_power = MOVE_INITIAL_POWER;
@@ -114,6 +134,7 @@ struct Hereditary {
 
 		total_win = 0;
 		total_play = 0;
+		type = t;
 		set();
 	}
 	Hereditary(Hereditary* copy) {
@@ -128,6 +149,7 @@ struct Hereditary {
 		unstable_power = copy->unstable_power;
 		non_current_move_power = copy->non_current_move_power;
 		importance_power = copy->importance_power;
+		type = copy->type;
 		total_win = 0;
 		total_play = 0;
 		set();
@@ -212,6 +234,8 @@ Hereditary* get_hereditary(string filename = "") {
 	}
 	// set Hereditary
 	if (mode == 1) {
+		cout << "type:";
+		cin >> initial_her->type;
 		cout << "move_initial_power:";
 		cin >> initial_her->move_initial_power;
 		cout << "move_diff_power:";
@@ -632,12 +656,20 @@ struct Board {
 			is_on_bot = !is_on_bot;
 			bot_move_power *= herediatry->non_current_move_power;
 		}
+		double result = 0;
 		double total_power = player_move_power + bot_move_power;
 		double power = MOVE_INITIAL_POWER * (1 - pow(not_empty_count, 3) / pow(BOARD_SIZE, 6));
-		bot_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(bot_move_power / total_power), power);
-		player_move_power = pow(1 + (MOVE_DIFF_POWER - 1)*(player_move_power / total_power), power);
-		double _temp = bot_move_power + player_move_power;
-		double result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
+		if (herediatry->type == 0) {
+			bot_move_power = pow(1 + (herediatry->move_diff_power - 1)*(bot_move_power / total_power), power);
+			player_move_power = pow(1 + (herediatry->move_diff_power - 1)*(player_move_power / total_power), power);
+			double _temp = bot_move_power + player_move_power;
+			result = bot_value * (bot_move_power / _temp) + player_value * (player_move_power / _temp);
+		}
+		else {
+			bot_move_power = pow(1 + (herediatry->move_diff_power - 1)*bot_move_power, power);
+			player_move_power = pow(1 + (herediatry->move_diff_power - 1)*player_move_power, power);
+			result = bot_value + player_value + bot_move_power - player_move_power;
+		}
 		if (is_current) {
 			cout << "当前电脑稳定子：";
 			for (int i = 0; i < bot_stables.size(); ++i) {
