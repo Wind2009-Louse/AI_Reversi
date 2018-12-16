@@ -937,6 +937,7 @@ int hereditary() {
 	// initial
 	vector<Hereditary*> current_hereditary;
 	current_hereditary.push_back(initial_her);
+	current_hereditary.push_back(initial_her_2);
 	for (int i = 1; i < max_her/2; ++i) {
 		Hereditary* copy = new Hereditary(initial_her);
 		copy->huge_variation();
@@ -967,7 +968,7 @@ int hereditary() {
 		// count
 		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
 		Hereditary* best_one = current_hereditary[0];
-		ofile << loop_times << "," << best_one->type;
+		ofile << loop_times << "," << best_one->type << ",";
 		ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
 		ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
 		ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
