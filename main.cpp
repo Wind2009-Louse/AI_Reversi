@@ -508,6 +508,7 @@ struct Board {
 		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 			write_file << struct_var_l2[i] << endl;
 		}
+		write_file.close();
 		write_file.open("struct/l3.txt");
 		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 			write_file << struct_var_l3[i] << endl;
