@@ -23,6 +23,8 @@ using namespace std;
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
 
+#define IMPORTANT_POWER 3
+
 const vector<string> full_alpha_list = { "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ",
 									"Ｈ", "Ｉ", "Ｊ", "Ｋ", "Ｌ", "Ｍ", "Ｎ",
 									"Ｏ", "Ｐ", "Ｑ", "Ｒ", "Ｓ", "Ｔ", "Ｕ",
@@ -30,6 +32,16 @@ const vector<string> full_alpha_list = { "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ
 const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
+const vector<vector<short> > normal_lines = { { 8,9,10,11,12,13,14,15 },
+											{ 16,17,18,19,20,21,22,23 },
+											{ 24,25,26,27,28,29,30,31 },
+											{ 32,33,34,35,36,37,38,39 },
+											{ 40,41,42,43,44,45,46,47 },
+											{ 48,49,50,51,52,53,54,55 } };
+const vector<vector<short> > important_lines = { { 0,1,2,3,4,5,6,7 },
+												{ 56,57,58,59,60,61,62,63 }, 
+												{ 0,9,18,27,36,45,54,63 },
+												{ 7,14,21,28,35,42,49,56 } };
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
 	const int rand_split = 100000;
@@ -271,6 +283,7 @@ struct Board {
 	int search_depth;
 	Hereditary* herediatry;
 	vector<short> except_steps;
+	vector<int> monte_var;
 
 	Board(bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -287,6 +300,7 @@ struct Board {
 		onboard(upleft+1, upleft) = -white;
 		search_depth = -1;
 		herediatry = new Hereditary;
+		monte_initial();
 	}
 	Board(Hereditary* her, bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -303,6 +317,7 @@ struct Board {
 		onboard(upleft + 1, upleft) = white;
 		search_depth = -1;
 		herediatry = her;
+		monte_initial();
 	}
 	Board(Board* b) {
 		alpha = b->alpha;
@@ -312,6 +327,32 @@ struct Board {
 		is_bot_first = b->is_bot_first;
 		search_depth = b->search_depth;
 		herediatry = b->herediatry;
+		monte_var = b->monte_var;
+	}
+	void monte_initial() {
+		ifstream monte_file;
+		monte_file.open("Monte.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				monte_var.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				monte_var.push_back(0);
+			}
+			monte_write();
+		}
+	}
+	void monte_write() {
+		ofstream write_file("Monte.txt");
+		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+			write_file << monte_var[i] << endl;
+		}
+		write_file.close();
 	}
 	// x,y's range: 0~5
 	short& onboard(int x, int y) {
@@ -435,7 +476,7 @@ struct Board {
 			}
 		}
 	}
-	short bot_on_idel_step(bool debug = true) {
+	short bot_on_idel_step(bool debug = true, bool use_monte = false, bool random_move = false) {
 		// whether use end search?
 		int empty_count = BOARD_SIZE*BOARD_SIZE;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
@@ -451,8 +492,8 @@ struct Board {
 		alpha = DBL_MIN;
 		beta = DBL_MAX;
 		vector<short> next_steps = next_possible();
-		pair<int, double> expection = get_self_value();
-		short next_step_id = next_steps[expection.first];
+		pair<int, double> expection = get_self_value(use_monte, random_move);
+		short next_step_id = expection.first;
 		if (debug) {
 			cout << "电脑认为能够达到的期望值：" << expection.second << endl;
 			cout << "电脑下子：(" << 1 + next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")。" << endl;
@@ -461,7 +502,7 @@ struct Board {
 		return next_step_id;
 	}
 	// <from which children(index of vector), value>
-	pair<int,double> get_self_value() {
+	pair<int,double> get_self_value(bool use_monte, bool random_move = false) {
 		double value = 0;
 		vector<short> next_steps = next_possible();
 		pair<int, double> result(-1, 0);
@@ -488,21 +529,30 @@ struct Board {
 		}
 		// to bottom
 		if (search_depth == 0) {
-			double value = calculate_current_value();
+			double value;
+			if (use_monte) {
+				value = calculate_monte();
+			}
+			else {
+				value = calculate_current_value();
+			}
 			return pair<int, double>(-1, value);
 		}	
+		if (random_move) {
+			random_shuffle(next_steps.begin(), next_steps.end());
+		}
 		for (int i = 0; i < next_steps.size(); ++i) {
 			Board* next_board = new Board(this);
 			next_board->new_step(next_steps[i]);
 			next_board->search_depth--;
-			pair<int,double> next_value = next_board->get_self_value();
+			pair<int,double> next_value = next_board->get_self_value(use_monte);
 			delete next_board;
 			if (
 				((result.first == -1) || 
 				(result.second < next_value.second && is_on_bot) ||
 					(result.second > next_value.second && !is_on_bot)) )
 			{
-				result.first = i;
+				result.first = next_steps[i];
 				result.second = next_value.second;
 				// alpha update
 				if ((alpha < result.second) && is_on_bot) {
@@ -685,6 +735,32 @@ struct Board {
 		}
 		return result;
 	}
+	double calculate_monte() {
+		double result = 0;
+		for (int i = 0; i < normal_lines.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < normal_lines[i].size(); ++j) {
+				id *= 3;
+				id += (board[normal_lines[i][j]] + 1);
+			}
+			result += monte_var[id];
+		}
+		for (int i = 0; i < important_lines.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < important_lines[i].size(); ++j) {
+				id *= 3;
+				id += (board[important_lines[i][j]] + 1);
+			}
+			result += monte_var[id] * IMPORTANT_POWER;
+		}
+		return result;
+	}
+	void all_reverse() {
+		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+			if (board[i] == BOT_PIECE) board[i] = PLAYER_PIECE;
+			else if (board[i] == PLAYER_PIECE) board[i] = BOT_PIECE;
+		}
+	}
 };
 
 int pvc() {
@@ -731,7 +807,7 @@ int pvc() {
 			current->calculate_current_value(true);
 			if (current->is_on_bot) {
 				cout << "电脑思考中..." << endl;
-				short this_record = current->bot_on_idel_step();
+				short this_record = current->bot_on_idel_step(true,false,true);
 				record.push_back(this_record);
 			}
 			else {
@@ -792,7 +868,7 @@ int pvc() {
 				}
 			}
 		}
-		double value = current->get_self_value().second;
+		double value = current->get_self_value(false).second;
 		cout << "你的最终得分：" << -value / FINAL_POWER << endl;
 		cout << "棋谱：" << endl;
 		for (int i = 0; i < record.size(); ++i) {
@@ -829,7 +905,7 @@ int pvc() {
 	return 0;
 }
 
-void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false) {
+void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool use_monte = false) {
 	her_first->total_play += 2;
 	her_second->total_play += 2;
 	Board* first_board = new Board(her_first, true);
@@ -871,8 +947,8 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		is_on_first = !is_on_first;
 	}
 	// calculate score
-	double first_score = first_board->get_self_value().second / FINAL_POWER;
-	double second_score = second_board->get_self_value().second / FINAL_POWER;
+	double first_score = first_board->get_self_value(use_monte).second / FINAL_POWER;
+	double second_score = second_board->get_self_value(use_monte).second / FINAL_POWER;
 	delete first_board;
 	delete second_board;
 	if (first_score * second_score > 0) {
@@ -1035,13 +1111,82 @@ int cvc() {
 	return 0;
 }
 
+int monte_train(bool debug = true) {
+	int times = 0;
+	while (times++<10000) {
+		vector<Board*> records;
+		Board* run_board = new Board(true);
+		while (true) {
+			Board* record = new Board(run_board);
+			records.push_back(record);
+			if (debug) {
+				cout << "--------------------------------------" << endl;
+				run_board->print();
+				cout << "当前执子：" << ((run_board->is_bot_first ^ run_board->is_on_bot) ? "○" : "●")  << endl;
+			}
+			vector<short> current_steps = run_board->next_possible();
+			if (current_steps.size() == 0) {
+				// end?
+				vector<short> next_steps = run_board->enemy_possible();
+				if (next_steps.size() == 0) {
+					break;
+				}
+				else {
+					// no space to play
+					// switch
+					run_board->is_bot_first = !run_board->is_bot_first;
+					run_board->all_reverse();
+					if (debug) {
+						cout << "无子可下！" << endl;
+					}
+					continue;
+				}
+			}
+			run_board->bot_on_idel_step(debug,true,true);
+			run_board->all_reverse();
+			run_board->is_bot_first = !run_board->is_bot_first;
+			run_board->is_on_bot = !run_board->is_on_bot;
+		}
+		// true=white, false=black
+		double value = run_board->get_self_value(false).second;
+		bool winner = (run_board->is_bot_first ^ (value > 0));
+		for (int i = 0; i < records.size(); ++i) {
+			Board* record = records[i];
+			// true=white, false=black
+			bool current_color = (record->is_bot_first ^ record->is_on_bot);
+			int power = (winner ^ current_color) ? -1 : 1;
+			for (int t = 0; t < normal_lines.size(); ++t) {
+				int id = 0;
+				for (int _i = 0; _i < normal_lines[t].size(); ++_i) {
+					id *= 3;
+					id += record->board[normal_lines[t][_i]] + 1;
+				}
+				run_board->monte_var[id] += power;
+			}
+			for (int t = 0; t < important_lines.size(); ++t) {
+				int id = 0;
+				for (int _i = 0; _i < important_lines[t].size(); ++_i) {
+					id *= 3;
+					id += record->board[important_lines[t][_i]] + 1;
+				}
+				run_board->monte_var[id] += (power * IMPORTANT_POWER);
+			}
+			delete record;
+		}
+		run_board->monte_write();
+		delete run_board;
+		system("pause");
+	}
+	return 0;
+}
+
 int main() {
 	srand(time(NULL));
 	int mode = -1;
 	while (mode == -1) {
-		cout << "请选择模式(0=训练, 1=人机，2=电脑对战):";
+		cout << "请选择模式(0=训练, 1=人机，2=电脑对战,3):";
 		cin >> mode;
-		if (mode < 0 || mode > 2) {
+		if (mode < 0 || mode > 3) {
 			cout << "Illegal input!" << endl;
 			if (cin.fail()) {
 				cin.sync();
@@ -1057,8 +1202,11 @@ int main() {
 	else if (mode ==1) {
 		pvc();
 	}
+	else if (mode == 2) {
+		cvc(); 
+	}
 	else {
-		cvc();
+		monte_train();
 	}
 	
 	return 0;
