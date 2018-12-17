@@ -32,24 +32,28 @@ const vector<string> full_alpha_list = { "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ
 const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
-const vector<vector<short> > normal_lines = { { 8,9,10,11,12,13,14,15 },
-											{ 16,17,18,19,20,21,22,23 },
-											{ 24,25,26,27,28,29,30,31 },
-											{ 32,33,34,35,36,37,38,39 },
-											{ 40,41,42,43,44,45,46,47 },
-											{ 48,49,50,51,52,53,54,55 },
-											{ 1,9,17,25,33,41,49,57 },
-											{ 2,10,18,26,34,42,50,58 },
-											{ 3,11,19,27,35,43,51,59 },
-											{ 4,12,20,28,36,44,52,60 },
-											{ 5,13,21,29,37,45,53,61 },
-											{ 6,14,22,30,38,46,54,62 } };
-const vector<vector<short> > important_lines = { { 0,1,2,3,4,5,6,7 },
-												{ 56,57,58,59,60,61,62,63 }, 
-												{ 0,8,16,24,32,40,48,56 },
-												{ 7,15,23,31,39,47,55,63 },
-												{ 0,9,18,27,36,45,54,63 },
-												{ 7,14,21,28,35,42,49,56 } };
+const vector<vector<short> > l1_list = { { 0,1,2,3,4,5,6,7 },
+										{ 56,57,58,59,60,61,62,63 } };
+const vector<vector<short> > l2_list = { { 8,9,10,11,12,13,14,15 },
+										{ 48,49,50,51,52,53,54,55 } };
+const vector<vector<short> > l3_list = { { 16,17,18,19,20,21,22,23 },
+										{ 40,41,42,43,44,45,46,47 } };
+const vector<vector<short> > l4_list = { { 24,25,26,27,28,29,30,31 },
+										{ 32,33,34,35,36,37,38,39 } };
+const vector<vector<short> > c5_list = { { 4,11,18,25,32 },
+										{ 3,12,21,30,39 },
+										{ 24,33,42,51,60 },
+										{ 31,38,45,52,59 } };
+const vector<vector<short> > c6_list = { { 5,12,19,26,33,40 },
+										{ 2,11,20,29,38,47 },
+										{ 16,25,34,43,52,61 },
+										{ 23,30,37,44,51,58 } };
+const vector<vector<short> > c7_list = { { 1,10,19,28,37,46,55 },
+										{ 6,13,20,27,34,41,48 },
+										{ 8,17,26,35,44,53,62 },
+										{ 15,22,29,36,43,50,57 } };
+const vector<vector<short> > c8_list = { { 0,9,18,27,36,45,54,63 },
+										{ 7,14,21,28,35,42,49,56 } };
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
 	const int rand_split = 100000;
@@ -291,7 +295,14 @@ struct Board {
 	int search_depth;
 	Hereditary* herediatry;
 	vector<short> except_steps;
-	vector<int> monte_var;
+	vector<int> struct_var_l1;
+	vector<int> struct_var_l2;
+	vector<int> struct_var_l3;
+	vector<int> struct_var_l4;
+	vector<int> struct_var_c5;
+	vector<int> struct_var_c6;
+	vector<int> struct_var_c7;
+	vector<int> struct_var_c8;
 
 	Board(bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -308,7 +319,7 @@ struct Board {
 		onboard(upleft+1, upleft) = -white;
 		search_depth = -1;
 		herediatry = new Hereditary;
-		monte_initial();
+		structvar_initial();
 	}
 	Board(Hereditary* her, bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -325,7 +336,7 @@ struct Board {
 		onboard(upleft + 1, upleft) = white;
 		search_depth = -1;
 		herediatry = her;
-		monte_initial();
+		structvar_initial();
 	}
 	Board(Board* b) {
 		alpha = b->alpha;
@@ -335,30 +346,196 @@ struct Board {
 		is_bot_first = b->is_bot_first;
 		search_depth = b->search_depth;
 		herediatry = b->herediatry;
-		monte_var = b->monte_var;
+		struct_var_l1 = b->struct_var_l1;
+		struct_var_l2 = b->struct_var_l2;
+		struct_var_l3 = b->struct_var_l3;
+		struct_var_l4 = b->struct_var_l4;
+		struct_var_c5 = b->struct_var_c5;
+		struct_var_c6 = b->struct_var_c6;
+		struct_var_c7 = b->struct_var_c7;
+		struct_var_c8 = b->struct_var_c8;
 	}
-	void monte_initial() {
+	void structvar_initial() {
+		bool need_rewrite = false;
 		ifstream monte_file;
-		monte_file.open("Monte.txt");
+		monte_file.open("truct/l1.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
 				monte_file >> _temp;
-				monte_var.push_back(_temp);
+				struct_var_l1.push_back(_temp);
 			}
 			monte_file.close();
 		}
 		else {
+			monte_file.close();
+			need_rewrite = true;
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				monte_var.push_back(0);
+				struct_var_l1.push_back(0);
 			}
-			monte_write();
+		}
+
+		monte_file.open("truct/l2.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_l2.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				struct_var_l2.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/l3.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_l3.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				struct_var_l3.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/l4.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_l4.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+				struct_var_l4.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/c5.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, 5); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_c5.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, 5); ++i) {
+				struct_var_c5.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/c6.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, 6); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_c6.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, 6); ++i) {
+				struct_var_c6.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/c7.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, 7); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_c7.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, 7); ++i) {
+				struct_var_c7.push_back(0);
+			}
+		}
+
+		monte_file.open("truct/c8.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, 8); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_c8.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, 8); ++i) {
+				struct_var_c8.push_back(0);
+			}
+		}
+
+		if (need_rewrite) {
+			struct_write();
 		}
 	}
-	void monte_write() {
-		ofstream write_file("Monte.txt");
+	void struct_write() {
+		ofstream write_file("struct/l1.txt");
 		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-			write_file << monte_var[i] << endl;
+			write_file << struct_var_l1[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/l2.txt");
+		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+			write_file << struct_var_l2[i] << endl;
+		}
+		write_file.open("struct/l3.txt");
+		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+			write_file << struct_var_l3[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/l4.txt");
+		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
+			write_file << struct_var_l4[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/c5.txt");
+		for (int i = 0; i < pow(3, 5); ++i) {
+			write_file << struct_var_c5[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/c6.txt");
+		for (int i = 0; i < pow(3, 6); ++i) {
+			write_file << struct_var_c6[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/c7.txt");
+		for (int i = 0; i < pow(3, 7); ++i) {
+			write_file << struct_var_c7[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/c8.txt");
+		for (int i = 0; i < pow(3, 8); ++i) {
+			write_file << struct_var_c8[i] << endl;
 		}
 		write_file.close();
 	}
@@ -539,7 +716,7 @@ struct Board {
 		if (search_depth == 0) {
 			double value;
 			if (use_monte) {
-				value = calculate_monte();
+				value = calculate_sturct();
 			}
 			else {
 				value = calculate_current_value();
@@ -743,23 +920,71 @@ struct Board {
 		}
 		return result;
 	}
-	double calculate_monte() {
+	double calculate_sturct() {
 		double result = 0;
-		for (int i = 0; i < normal_lines.size(); ++i) {
+		for (int i = 0; i < l1_list.size(); ++i) {
 			int id = 0;
-			for (int j = 0; j < normal_lines[i].size(); ++j) {
+			for (int j = 0; j < l1_list[i].size(); ++j) {
 				id *= 3;
-				id += (board[normal_lines[i][j]] + 1);
+				id += board[l1_list[i][j]] + 1;
 			}
-			result += monte_var[id];
+			result += struct_var_l1[id];
 		}
-		for (int i = 0; i < important_lines.size(); ++i) {
+		for (int i = 0; i < l2_list.size(); ++i) {
 			int id = 0;
-			for (int j = 0; j < important_lines[i].size(); ++j) {
+			for (int j = 0; j < l2_list[i].size(); ++j) {
 				id *= 3;
-				id += (board[important_lines[i][j]] + 1);
+				id += board[l2_list[i][j]] + 1;
 			}
-			result += monte_var[id] * IMPORTANT_POWER;
+			result += struct_var_l2[id];
+		}
+		for (int i = 0; i < l3_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < l3_list[i].size(); ++j) {
+				id *= 3;
+				id += board[l3_list[i][j]] + 1;
+			}
+			result += struct_var_l3[id];
+		}
+		for (int i = 0; i < l4_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < l4_list[i].size(); ++j) {
+				id *= 3;
+				id += board[l4_list[i][j]] + 1;
+			}
+			result += struct_var_l4[id];
+		}
+		for (int i = 0; i < c5_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < c5_list[i].size(); ++j) {
+				id *= 3;
+				id += board[c5_list[i][j]] + 1;
+			}
+			result += struct_var_c5[id];
+		}
+		for (int i = 0; i < c6_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < c6_list[i].size(); ++j) {
+				id *= 3;
+				id += board[c6_list[i][j]] + 1;
+			}
+			result += struct_var_c6[id];
+		}
+		for (int i = 0; i < c7_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < c7_list[i].size(); ++j) {
+				id *= 3;
+				id += board[c7_list[i][j]] + 1;
+			}
+			result += struct_var_c7[id];
+		}
+		for (int i = 0; i < c8_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < c8_list[i].size(); ++j) {
+				id *= 3;
+				id += board[c8_list[i][j]] + 1;
+			}
+			result += struct_var_c8[id];
 		}
 		return result;
 	}
@@ -767,6 +992,106 @@ struct Board {
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
 			if (board[i] == BOT_PIECE) board[i] = PLAYER_PIECE;
 			else if (board[i] == PLAYER_PIECE) board[i] = BOT_PIECE;
+		}
+	}
+	void update_struct(bool iswin, Board* target=NULL) {
+		if (target == NULL) target = this;
+		int power = (iswin) ? 1 : 0;
+		for (int t = 0; t < l1_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < l1_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[l1_list[t][_i]] + 1;
+				id_2 += board[l1_list[t][_i]] * -1 + 1;
+			}
+			struct_var_l1[id_1] += power;
+			struct_var_l1[id_2] -= power;
+		}
+		for (int t = 0; t < l2_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < l2_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[l2_list[t][_i]] + 1;
+				id_2 += board[l2_list[t][_i]] * -1 + 1;
+			}
+			struct_var_l2[id_1] += power;
+			struct_var_l2[id_2] -= power;
+		}
+		for (int t = 0; t < l3_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < l3_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[l3_list[t][_i]] + 1;
+				id_2 += board[l3_list[t][_i]] * -1 + 1;
+			}
+			struct_var_l3[id_1] += power;
+			struct_var_l3[id_2] -= power;
+		}
+		for (int t = 0; t < l4_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < l4_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[l4_list[t][_i]] + 1;
+				id_2 += board[l4_list[t][_i]] * -1 + 1;
+			}
+			struct_var_l4[id_1] += power;
+			struct_var_l4[id_2] -= power;
+		}
+		for (int t = 0; t < c5_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < c5_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[c5_list[t][_i]] + 1;
+				id_2 += board[c5_list[t][_i]] * -1 + 1;
+			}
+			struct_var_c5[id_1] += power;
+			struct_var_c5[id_2] -= power;
+		}
+		for (int t = 0; t < c6_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < c6_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[c6_list[t][_i]] + 1;
+				id_2 += board[c6_list[t][_i]] * -1 + 1;
+			}
+			struct_var_c6[id_1] += power;
+			struct_var_c6[id_2] -= power;
+		}
+		for (int t = 0; t < c7_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < c7_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[c7_list[t][_i]] + 1;
+				id_2 += board[c7_list[t][_i]] * -1 + 1;
+			}
+			struct_var_c7[id_1] += power;
+			struct_var_c7[id_2] -= power;
+		}
+		for (int t = 0; t < c8_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < c8_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[c8_list[t][_i]] + 1;
+				id_2 += board[c8_list[t][_i]] * -1 + 1;
+			}
+			struct_var_c8[id_1] += power;
+			struct_var_c8[id_2] -= power;
 		}
 	}
 };
@@ -791,6 +1116,22 @@ int pvc() {
 		}
 		string your = (mode) ? "(白子○)" : "(黑子●)";
 		Board* current = new Board(initial_her,mode == 1);
+		bool use_monte = false;
+		int _ip = -1;
+		while (_ip == -1) {
+			cout << "请选择评估方式(0=全局, 1=模块):";
+			cin >> _ip;
+			if (_ip < 0 || _ip > 1) {
+				cout << "Illegal input!" << endl;
+				if (cin.fail()) {
+					cin.sync();
+					cin.clear();
+					cin.ignore();
+				}
+				_ip = -1;
+			}
+		}
+		use_monte = _ip == 1;
 		vector<Board*> board_records;
 		while (true) {
 			cout << endl;
@@ -815,7 +1156,7 @@ int pvc() {
 			current->calculate_current_value(true);
 			if (current->is_on_bot) {
 				cout << "电脑思考中..." << endl;
-				short this_record = current->bot_on_idel_step(true,false,true);
+				short this_record = current->bot_on_idel_step(true, use_monte,true);
 				record.push_back(this_record);
 			}
 			else {
@@ -889,9 +1230,12 @@ int pvc() {
 			}
 			if (i % 10 == 9) cout << endl;
 		}
+		bool isbotwin = value < 0;
 		for (int i = 0; i < board_records.size(); ++i) {
+			current->update_struct(isbotwin, board_records[i]);
 			delete board_records[i];
 		}
+		current->struct_write();
 		cout << endl;
 		mode = -1;
 		while (mode == -1) {
@@ -1131,6 +1475,7 @@ int monte_train(bool debug = true) {
 				cout << "--------------------------------------" << endl;
 				run_board->print();
 				cout << "当前执子：" << ((run_board->is_bot_first ^ run_board->is_on_bot) ? "○" : "●")  << endl;
+				cout << "当前期望值：" << (run_board->calculate_sturct()) << endl;
 			}
 			vector<short> current_steps = run_board->next_possible();
 			if (current_steps.size() == 0) {
@@ -1162,34 +1507,11 @@ int monte_train(bool debug = true) {
 			Board* record = records[i];
 			// true=white, false=black
 			bool current_color = (record->is_bot_first ^ record->is_on_bot);
-			int power = (winner ^ current_color) ? -1 : 1;
-			for (int t = 0; t < normal_lines.size(); ++t) {
-				int id_1 = 0;
-				int id_2 = 0;
-				for (int _i = 0; _i < normal_lines[t].size(); ++_i) {
-					id_1 *= 3;
-					id_2 *= 3;
-					id_1 += record->board[normal_lines[t][_i]] + 1;
-					id_2 += record->board[normal_lines[t][_i]] * -1 + 1;
-				}
-				run_board->monte_var[id_1] += power;
-				run_board->monte_var[id_2] -= power;
-			}
-			for (int t = 0; t < important_lines.size(); ++t) {
-				int id_1 = 0;
-				int id_2 = 0;
-				for (int _i = 0; _i < important_lines[t].size(); ++_i) {
-					id_1 *= 3;
-					id_2 *= 3;
-					id_1 += record->board[important_lines[t][_i]] + 1;
-					id_2 += record->board[important_lines[t][_i]] * -1 + 1;
-				}
-				run_board->monte_var[id_1] += (power * IMPORTANT_POWER);
-				run_board->monte_var[id_2] -= (power * IMPORTANT_POWER);
-			}
+			int isselfwin = (winner ^ current_color) ? -1 : 1;
+			run_board->update_struct(isselfwin, record);
 			delete record;
 		}
-		run_board->monte_write();
+		run_board->struct_write();
 		delete run_board;
 	}
 	return 0;
