@@ -19,7 +19,7 @@ using namespace std;
 #define HEREDITART_PER_THREAD 3
 
 #define SEARCH_MAX_DEPTH 7 // search depth
-#define SEARCH_MAX_DEPTH_END 13 // search depth while at end
+#define SEARCH_MAX_DEPTH_END 7 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
 
@@ -358,7 +358,7 @@ struct Board {
 	void structvar_initial() {
 		bool need_rewrite = false;
 		ifstream monte_file;
-		monte_file.open("truct/l1.txt");
+		monte_file.open("struct/l1.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
@@ -375,7 +375,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/l2.txt");
+		monte_file.open("struct/l2.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
@@ -392,7 +392,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/l3.txt");
+		monte_file.open("struct/l3.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
@@ -409,7 +409,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/l4.txt");
+		monte_file.open("struct/l4.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
@@ -426,7 +426,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/c5.txt");
+		monte_file.open("struct/c5.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, 5); ++i) {
 				int _temp;
@@ -443,7 +443,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/c6.txt");
+		monte_file.open("struct/c6.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, 6); ++i) {
 				int _temp;
@@ -460,7 +460,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/c7.txt");
+		monte_file.open("struct/c7.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, 7); ++i) {
 				int _temp;
@@ -477,7 +477,7 @@ struct Board {
 			}
 		}
 
-		monte_file.open("truct/c8.txt");
+		monte_file.open("struct/c8.txt");
 		if (monte_file.is_open()) {
 			for (int i = 0; i < pow(3, 8); ++i) {
 				int _temp;
@@ -997,7 +997,7 @@ struct Board {
 	}
 	void update_struct(bool iswin, Board* target=NULL) {
 		if (target == NULL) target = this;
-		int power = (iswin) ? 1 : 0;
+		int power = (iswin) ? 1 : -1;
 		for (int t = 0; t < l1_list.size(); ++t) {
 			int id_1 = 0;
 			int id_2 = 0;
@@ -1464,7 +1464,7 @@ int cvc() {
 	return 0;
 }
 
-int monte_train(bool debug = true) {
+int struct_train(bool debug = true) {
 	int times = 0;
 	while (times++<10000) {
 		vector<Board*> records;
@@ -1544,7 +1544,7 @@ int main() {
 		cvc(); 
 	}
 	else {
-		monte_train();
+		struct_train();
 	}
 	
 	return 0;
