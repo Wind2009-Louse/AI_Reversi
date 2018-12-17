@@ -37,9 +37,17 @@ const vector<vector<short> > normal_lines = { { 8,9,10,11,12,13,14,15 },
 											{ 24,25,26,27,28,29,30,31 },
 											{ 32,33,34,35,36,37,38,39 },
 											{ 40,41,42,43,44,45,46,47 },
-											{ 48,49,50,51,52,53,54,55 } };
+											{ 48,49,50,51,52,53,54,55 },
+											{ 1,9,17,25,33,41,49,57 },
+											{ 2,10,18,26,34,42,50,58 },
+											{ 3,11,19,27,35,43,51,59 },
+											{ 4,12,20,28,36,44,52,60 },
+											{ 5,13,21,29,37,45,53,61 },
+											{ 6,14,22,30,38,46,54,62 } };
 const vector<vector<short> > important_lines = { { 0,1,2,3,4,5,6,7 },
 												{ 56,57,58,59,60,61,62,63 }, 
+												{ 0,8,16,24,32,40,48,56 },
+												{ 7,15,23,31,39,47,55,63 },
 												{ 0,9,18,27,36,45,54,63 },
 												{ 7,14,21,28,35,42,49,56 } };
 double get_range_rand(double rand_min, double rand_max) {
@@ -1156,26 +1164,33 @@ int monte_train(bool debug = true) {
 			bool current_color = (record->is_bot_first ^ record->is_on_bot);
 			int power = (winner ^ current_color) ? -1 : 1;
 			for (int t = 0; t < normal_lines.size(); ++t) {
-				int id = 0;
+				int id_1 = 0;
+				int id_2 = 0;
 				for (int _i = 0; _i < normal_lines[t].size(); ++_i) {
-					id *= 3;
-					id += record->board[normal_lines[t][_i]] + 1;
+					id_1 *= 3;
+					id_2 *= 3;
+					id_1 += record->board[normal_lines[t][_i]] + 1;
+					id_2 += record->board[normal_lines[t][_i]] * -1 + 1;
 				}
-				run_board->monte_var[id] += power;
+				run_board->monte_var[id_1] += power;
+				run_board->monte_var[id_2] -= power;
 			}
 			for (int t = 0; t < important_lines.size(); ++t) {
-				int id = 0;
+				int id_1 = 0;
+				int id_2 = 0;
 				for (int _i = 0; _i < important_lines[t].size(); ++_i) {
-					id *= 3;
-					id += record->board[important_lines[t][_i]] + 1;
+					id_1 *= 3;
+					id_2 *= 3;
+					id_1 += record->board[important_lines[t][_i]] + 1;
+					id_2 += record->board[important_lines[t][_i]] * -1 + 1;
 				}
-				run_board->monte_var[id] += (power * IMPORTANT_POWER);
+				run_board->monte_var[id_1] += (power * IMPORTANT_POWER);
+				run_board->monte_var[id_2] -= (power * IMPORTANT_POWER);
 			}
 			delete record;
 		}
 		run_board->monte_write();
 		delete run_board;
-		system("pause");
 	}
 	return 0;
 }
