@@ -35,7 +35,7 @@ const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 const vector<vector<short> > l1_list = { { 0,1,2,3,4,5,6,7 },
 										{ 56,57,58,59,60,61,62,63 },
 										{ 0,8,16,24,32,40,48,56 },
-										{ 7,15,23,31,39,47,55,63 } };
+										{ 7,15,23,31,39,47,55,63 }};
 const vector<vector<short> > l2_list = { { 8,9,10,11,12,13,14,15 },
 										{ 48,49,50,51,52,53,54,55 },
 										{ 1,9,17,25,33,41,49,57 },
@@ -961,67 +961,99 @@ struct Board {
 		double result = 0;
 		for (int i = 0; i < l1_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < l1_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[l1_list[i][j]] + 1;
+				_id += board[l1_list[i][l1_list[i].size() - j]] + 1;
 			}
 			result += struct_var_l1[id];
+			result += struct_var_l1[_id];
 		}
 		for (int i = 0; i < l2_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < l2_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[l2_list[i][j]] + 1;
+				_id += board[l2_list[i][l2_list[i].size() - j]] + 1;
 			}
 			result += struct_var_l2[id];
+			result += struct_var_l2[_id];
 		}
 		for (int i = 0; i < l3_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < l3_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[l3_list[i][j]] + 1;
+				_id += board[l3_list[i][l3_list[i].size() - j]] + 1;
 			}
 			result += struct_var_l3[id];
+			result += struct_var_l3[_id];
 		}
 		for (int i = 0; i < l4_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < l4_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[l4_list[i][j]] + 1;
+				_id += board[l4_list[i][l4_list[i].size() - j]] + 1;
 			}
 			result += struct_var_l4[id];
+			result += struct_var_l4[_id];
 		}
 		for (int i = 0; i < c5_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < c5_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[c5_list[i][j]] + 1;
+				_id += board[c5_list[i][c5_list[i].size() - j]] + 1;
 			}
 			result += struct_var_c5[id];
+			result += struct_var_c5[_id];
 		}
 		for (int i = 0; i < c6_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < c6_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[c6_list[i][j]] + 1;
+				_id += board[c6_list[i][c6_list[i].size() - j]] + 1;
 			}
 			result += struct_var_c6[id];
+			result += struct_var_c6[_id];
 		}
 		for (int i = 0; i < c7_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < c7_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[c7_list[i][j]] + 1;
+				_id += board[c7_list[i][c7_list[i].size() - j]] + 1;
 			}
 			result += struct_var_c7[id];
+			result += struct_var_c7[_id];
 		}
 		for (int i = 0; i < c8_list.size(); ++i) {
 			int id = 0;
+			int _id = 0;
 			for (int j = 0; j < c8_list[i].size(); ++j) {
 				id *= 3;
+				_id *= 3;
 				id += board[c8_list[i][j]] + 1;
+				_id += board[c8_list[i][c8_list[i].size() - j]] + 1;
 			}
 			result += struct_var_c8[id];
+			result += struct_var_c8[_id];
 		}
 		for (int i = 0; i < cr_list.size(); ++i) {
 			int id = 0;
@@ -1286,7 +1318,7 @@ int pvc() {
 			}
 			if (i % 10 == 9) cout << endl;
 		}
-		bool isbotwin = value < 0;
+		int isbotwin = value < 0 ? 1 : -1;
 		for (int i = 0; i < board_records.size(); ++i) {
 			current->update_struct(isbotwin, board_records[i]);
 			delete board_records[i];
