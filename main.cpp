@@ -1039,9 +1039,8 @@ struct Board {
 			else if (board[i] == PLAYER_PIECE) board[i] = BOT_PIECE;
 		}
 	}
-	void update_struct(bool iswin, Board* target=NULL) {
+	void update_struct(int power, Board* target=NULL) {
 		if (target == NULL) target = this;
-		int power = (iswin) ? 1 : -1;
 		for (int t = 0; t < l1_list.size(); ++t) {
 			int id_1 = 0;
 			int id_2 = 0;
