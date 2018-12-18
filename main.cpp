@@ -33,13 +33,21 @@ const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
 const vector<vector<short> > l1_list = { { 0,1,2,3,4,5,6,7 },
-										{ 56,57,58,59,60,61,62,63 } };
+										{ 56,57,58,59,60,61,62,63 },
+										{ 0,8,16,24,32,40,48,56 },
+										{ 7,15,23,31,39,47,55,63 } };
 const vector<vector<short> > l2_list = { { 8,9,10,11,12,13,14,15 },
-										{ 48,49,50,51,52,53,54,55 } };
+										{ 48,49,50,51,52,53,54,55 },
+										{ 1,9,17,25,33,41,49,57 },
+										{ 6,14,22,30,38,46,54,62 } };
 const vector<vector<short> > l3_list = { { 16,17,18,19,20,21,22,23 },
-										{ 40,41,42,43,44,45,46,47 } };
+										{ 40,41,42,43,44,45,46,47 },
+										{ 2,10,18,26,34,42,50,58 },
+										{ 5,13,21,29,37,45,53,61 } };
 const vector<vector<short> > l4_list = { { 24,25,26,27,28,29,30,31 },
-										{ 32,33,34,35,36,37,38,39 } };
+										{ 32,33,34,35,36,37,38,39 },
+										{ 3,11,19,27,35,43,51,59 },
+										{ 4,12,20,28,36,44,52,60 } };
 const vector<vector<short> > c5_list = { { 4,11,18,25,32 },
 										{ 3,12,21,30,39 },
 										{ 24,33,42,51,60 },
@@ -54,6 +62,10 @@ const vector<vector<short> > c7_list = { { 1,10,19,28,37,46,55 },
 										{ 15,22,29,36,43,50,57 } };
 const vector<vector<short> > c8_list = { { 0,9,18,27,36,45,54,63 },
 										{ 7,14,21,28,35,42,49,56 } };
+const vector<vector<short> > cr_list = { { 0,1,2,8,9,10,16,17 },
+										{ 7,15,23,6,14,22,5,13 },
+										{ 63,62,61,55,54,53,47,46 },
+										{ 56,48,40,57,49,41,58,50 }};
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
 	const int rand_split = 100000;
@@ -303,6 +315,7 @@ struct Board {
 	vector<int> struct_var_c6;
 	vector<int> struct_var_c7;
 	vector<int> struct_var_c8;
+	vector<int> struct_var_cr;
 
 	Board(bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -354,6 +367,7 @@ struct Board {
 		struct_var_c6 = b->struct_var_c6;
 		struct_var_c7 = b->struct_var_c7;
 		struct_var_c8 = b->struct_var_c8;
+		struct_var_cr = b->struct_var_cr;
 	}
 	void structvar_initial() {
 		bool need_rewrite = false;
@@ -494,6 +508,23 @@ struct Board {
 			}
 		}
 
+		monte_file.open("struct/cr.txt");
+		if (monte_file.is_open()) {
+			for (int i = 0; i < pow(3, 8); ++i) {
+				int _temp;
+				monte_file >> _temp;
+				struct_var_cr.push_back(_temp);
+			}
+			monte_file.close();
+		}
+		else {
+			monte_file.close();
+			need_rewrite = true;
+			for (int i = 0; i < pow(3, 8); ++i) {
+				struct_var_cr.push_back(0);
+			}
+		}
+
 		if (need_rewrite) {
 			struct_write();
 		}
@@ -537,6 +568,11 @@ struct Board {
 		write_file.open("struct/c8.txt");
 		for (int i = 0; i < pow(3, 8); ++i) {
 			write_file << struct_var_c8[i] << endl;
+		}
+		write_file.close();
+		write_file.open("struct/cr.txt");
+		for (int i = 0; i < pow(3, 8); ++i) {
+			write_file << struct_var_cr[i] << endl;
 		}
 		write_file.close();
 	}
@@ -987,6 +1023,14 @@ struct Board {
 			}
 			result += struct_var_c8[id];
 		}
+		for (int i = 0; i < cr_list.size(); ++i) {
+			int id = 0;
+			for (int j = 0; j < cr_list[i].size(); ++j) {
+				id *= 3;
+				id += board[cr_list[i][j]] + 1;
+			}
+			result += struct_var_cr[id];
+		}
 		return result;
 	}
 	void all_reverse() {
@@ -1093,6 +1137,18 @@ struct Board {
 			}
 			struct_var_c8[id_1] += power;
 			struct_var_c8[id_2] -= power;
+		}
+		for (int t = 0; t < cr_list.size(); ++t) {
+			int id_1 = 0;
+			int id_2 = 0;
+			for (int _i = 0; _i < cr_list[t].size(); ++_i) {
+				id_1 *= 3;
+				id_2 *= 3;
+				id_1 += board[cr_list[t][_i]] + 1;
+				id_2 += board[cr_list[t][_i]] * -1 + 1;
+			}
+			struct_var_cr[id_1] += power;
+			struct_var_cr[id_2] -= power;
 		}
 	}
 };
