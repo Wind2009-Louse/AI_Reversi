@@ -966,7 +966,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[l1_list[i][j]] + 1;
-				_id += board[l1_list[i][l1_list[i].size() - j]] + 1;
+				_id += board[l1_list[i][l1_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_l1[id];
 			result += struct_var_l1[_id];
@@ -978,7 +978,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[l2_list[i][j]] + 1;
-				_id += board[l2_list[i][l2_list[i].size() - j]] + 1;
+				_id += board[l2_list[i][l2_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_l2[id];
 			result += struct_var_l2[_id];
@@ -990,7 +990,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[l3_list[i][j]] + 1;
-				_id += board[l3_list[i][l3_list[i].size() - j]] + 1;
+				_id += board[l3_list[i][l3_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_l3[id];
 			result += struct_var_l3[_id];
@@ -1002,7 +1002,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[l4_list[i][j]] + 1;
-				_id += board[l4_list[i][l4_list[i].size() - j]] + 1;
+				_id += board[l4_list[i][l4_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_l4[id];
 			result += struct_var_l4[_id];
@@ -1014,7 +1014,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[c5_list[i][j]] + 1;
-				_id += board[c5_list[i][c5_list[i].size() - j]] + 1;
+				_id += board[c5_list[i][c5_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_c5[id];
 			result += struct_var_c5[_id];
@@ -1026,7 +1026,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[c6_list[i][j]] + 1;
-				_id += board[c6_list[i][c6_list[i].size() - j]] + 1;
+				_id += board[c6_list[i][c6_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_c6[id];
 			result += struct_var_c6[_id];
@@ -1038,7 +1038,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[c7_list[i][j]] + 1;
-				_id += board[c7_list[i][c7_list[i].size() - j]] + 1;
+				_id += board[c7_list[i][c7_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_c7[id];
 			result += struct_var_c7[_id];
@@ -1050,7 +1050,7 @@ struct Board {
 				id *= 3;
 				_id *= 3;
 				id += board[c8_list[i][j]] + 1;
-				_id += board[c8_list[i][c8_list[i].size() - j]] + 1;
+				_id += board[c8_list[i][c8_list[i].size() - 1 - j]] + 1;
 			}
 			result += struct_var_c8[id];
 			result += struct_var_c8[_id];
