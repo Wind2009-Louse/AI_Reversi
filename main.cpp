@@ -15,7 +15,7 @@ using namespace std;
 #define EMPTY_PIECE 0
 
 #define BOARD_SIZE 8
-#define FINAL_POWER 100
+#define FINAL_POWER 10000
 #define HEREDITART_PER_THREAD 3
 
 #define SEARCH_MAX_DEPTH 7 // search depth
@@ -371,154 +371,154 @@ struct Board {
 	}
 	void structvar_initial() {
 		bool need_rewrite = false;
-		ifstream monte_file;
-		monte_file.open("struct/l1.txt");
-		if (monte_file.is_open()) {
+		ifstream struct_file;
+		struct_file.open("struct/l1.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_l1.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				struct_var_l1.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/l2.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/l2.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_l2.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				struct_var_l2.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/l3.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/l3.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_l3.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				struct_var_l3.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/l4.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/l4.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_l4.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
 				struct_var_l4.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/c5.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/c5.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, 5); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_c5.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, 5); ++i) {
 				struct_var_c5.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/c6.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/c6.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, 6); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_c6.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, 6); ++i) {
 				struct_var_c6.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/c7.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/c7.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, 7); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_c7.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, 7); ++i) {
 				struct_var_c7.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/c8.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/c8.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, 8); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_c8.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, 8); ++i) {
 				struct_var_c8.push_back(0);
 			}
 		}
 
-		monte_file.open("struct/cr.txt");
-		if (monte_file.is_open()) {
+		struct_file.open("struct/cr.txt");
+		if (struct_file.is_open()) {
 			for (int i = 0; i < pow(3, 8); ++i) {
 				int _temp;
-				monte_file >> _temp;
+				struct_file >> _temp;
 				struct_var_cr.push_back(_temp);
 			}
-			monte_file.close();
+			struct_file.close();
 		}
 		else {
-			monte_file.close();
+			struct_file.close();
 			need_rewrite = true;
 			for (int i = 0; i < pow(3, 8); ++i) {
 				struct_var_cr.push_back(0);
@@ -698,7 +698,7 @@ struct Board {
 			}
 		}
 	}
-	short bot_on_idel_step(bool debug = true, bool use_monte = false, bool random_move = false) {
+	short bot_on_ideal_step(bool debug = true, bool use_struct = false, bool random_move = false) {
 		// whether use end search?
 		int empty_count = BOARD_SIZE*BOARD_SIZE;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
@@ -714,7 +714,7 @@ struct Board {
 		alpha = DBL_MIN;
 		beta = DBL_MAX;
 		vector<short> next_steps = next_possible();
-		pair<int, double> expection = get_self_value(use_monte, random_move);
+		pair<int, double> expection = get_self_value(use_struct, random_move);
 		short next_step_id = expection.first;
 		if (debug) {
 			cout << "电脑认为能够达到的期望值：" << expection.second << endl;
@@ -724,7 +724,7 @@ struct Board {
 		return next_step_id;
 	}
 	// <from which children(index of vector), value>
-	pair<int,double> get_self_value(bool use_monte, bool random_move = false) {
+	pair<int,double> get_self_value(bool use_struct, bool random_move = false) {
 		double value = 0;
 		vector<short> next_steps = next_possible();
 		pair<int, double> result(-1, 0);
@@ -752,7 +752,7 @@ struct Board {
 		// to bottom
 		if (search_depth == 0) {
 			double value;
-			if (use_monte) {
+			if (use_struct) {
 				value = calculate_sturct();
 			}
 			else {
@@ -767,7 +767,7 @@ struct Board {
 			Board* next_board = new Board(this);
 			next_board->new_step(next_steps[i]);
 			next_board->search_depth--;
-			pair<int,double> next_value = next_board->get_self_value(use_monte);
+			pair<int,double> next_value = next_board->get_self_value(use_struct, random_move);
 			delete next_board;
 			if (
 				((result.first == -1) || 
@@ -1204,7 +1204,7 @@ int pvc() {
 		}
 		string your = (mode) ? "(白子○)" : "(黑子●)";
 		Board* current = new Board(initial_her,mode == 1);
-		bool use_monte = false;
+		bool use_struct = false;
 		int _ip = -1;
 		while (_ip == -1) {
 			cout << "请选择评估方式(0=全局, 1=模块):";
@@ -1219,7 +1219,7 @@ int pvc() {
 				_ip = -1;
 			}
 		}
-		use_monte = _ip == 1;
+		use_struct = _ip == 1;
 		vector<Board*> board_records;
 		while (true) {
 			cout << endl;
@@ -1244,7 +1244,7 @@ int pvc() {
 			current->calculate_current_value(true);
 			if (current->is_on_bot) {
 				cout << "电脑思考中..." << endl;
-				short this_record = current->bot_on_idel_step(true, use_monte,true);
+				short this_record = current->bot_on_ideal_step(true, use_struct,true);
 				record.push_back(this_record);
 			}
 			else {
@@ -1345,7 +1345,7 @@ int pvc() {
 	return 0;
 }
 
-void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool use_monte = false) {
+void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool use_struct = false) {
 	her_first->total_play += 2;
 	her_second->total_play += 2;
 	Board* first_board = new Board(her_first, true);
@@ -1365,7 +1365,7 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 				string piece = (is_on_first) ? "●" : "○";
 				cout << "当前执棋：" << piece << endl;
 			}
-			short step = current_board->bot_on_idel_step(debug);
+			short step = current_board->bot_on_ideal_step(debug);
 			next_board->new_step(step);
 		}
 		else {
@@ -1387,8 +1387,8 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		is_on_first = !is_on_first;
 	}
 	// calculate score
-	double first_score = first_board->get_self_value(use_monte).second / FINAL_POWER;
-	double second_score = second_board->get_self_value(use_monte).second / FINAL_POWER;
+	double first_score = first_board->get_self_value(use_struct).second / FINAL_POWER;
+	double second_score = second_board->get_self_value(use_struct).second / FINAL_POWER;
 	delete first_board;
 	delete second_board;
 	if (first_score * second_score > 0) {
@@ -1583,7 +1583,7 @@ int struct_train(bool debug = true) {
 					continue;
 				}
 			}
-			run_board->bot_on_idel_step(debug,true,true);
+			run_board->bot_on_ideal_step(debug,true,true);
 			run_board->all_reverse();
 			run_board->is_bot_first = !run_board->is_bot_first;
 			run_board->is_on_bot = !run_board->is_on_bot;
