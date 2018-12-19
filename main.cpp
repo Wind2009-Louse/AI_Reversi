@@ -65,6 +65,7 @@ const vector< vector< vector<int> > > var_lists = {
 };
 
 vector <vector<int> > struct_vars;
+vector <int> move_var;
 
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
@@ -380,13 +381,32 @@ struct Board {
 				}
 			}
 		}
+		// move
+		move_var.clear();
+		ifstream struct_file;
+		struct_file.open("struct/move.txt");
+		if (struct_file.is_open()) {
+			for (int j = 0; j < 3600; ++j) {
+				int _temp;
+				struct_file >> _temp;
+				move_var.push_back(_temp);
+			}
+			struct_file.close();
+		}
+		else {
+			struct_file.close();
+			need_rewrite = true;
+			for (int j = 0; j < 3600; ++j) {
+				move_var.push_back(0);
+			}
+		}
 
 		if (need_rewrite) {
 			struct_write();
 		}
 	}
 	void struct_write() {
-		for (int i = 0; i < 9; ++i) {
+		for (int i = 0; i < struct_vars.size(); ++i) {
 			ofstream write_file;
 			string filename = "struct/";
 			filename += to_string(i);
@@ -397,6 +417,11 @@ struct Board {
 			}
 			write_file.close();
 		}
+		ofstream write_file("struct/move.txt");
+		for (int i = 0; i < 3600; ++i) {
+			write_file << move_var[i] << endl;
+		}
+		write_file.close();
 	}
 	// x,y's range: 0~BOARD_SIZE
 	short& onboard(int x, int y) {
@@ -782,7 +807,8 @@ struct Board {
 	}
 	double calculate_sturct() {
 		double result = 0;
-#pragma omp parallel for schedule(dynamic)
+		// board struct
+#pragma omp parallel for
 		for (int i = 0; i < var_lists.size(); ++i) {
 			double _result = 0;
 			vector< vector<int> > var_list = var_lists[i];
@@ -797,6 +823,14 @@ struct Board {
 #pragma omp atomic
 			result += _result;
 		}
+		// move struct
+		int current_stage = 0;
+		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+			if (board[i] == 0) current_stage++;
+		}
+		int move_power = next_possible().size();
+		int move_id = current_stage * 60 + move_power;
+		result += move_var[move_id];
 		return result;
 	}
 	void all_reverse() {
@@ -807,6 +841,7 @@ struct Board {
 	}
 	void update_struct(int power, Board* target=NULL) {
 		if (target == NULL) target = this;
+		// struct update
 #pragma omp parallel for
 		for (int i = 0; i < var_lists.size(); ++i) {
 			vector< vector<int> > var_list = var_lists[i];
@@ -823,6 +858,17 @@ struct Board {
 				struct_vars[i][_id] += power;
 			}
 		}
+		// move update;
+		int current_stage = 0;
+		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+			if (target->board[i] == 0) current_stage++;
+		}
+		int bot_move = target->next_possible().size();
+		int enemy_move = target->enemy_possible().size();
+		int bot_id = current_stage * 60 + bot_move;
+		int enemy_id = current_stage * 60 + enemy_move;
+		move_var[bot_id] += power;
+		move_var[enemy_id] -= power;
 	}
 };
 
