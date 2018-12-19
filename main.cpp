@@ -19,7 +19,7 @@ using namespace std;
 #define HEREDITART_PER_THREAD 3
 
 #define SEARCH_MAX_DEPTH 7 // search depth
-#define SEARCH_MAX_DEPTH_END 7 // search depth while at end
+#define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
 
@@ -32,40 +32,40 @@ const vector<string> full_alpha_list = { "£Á", "£Â", "£Ã", "£Ä", "£Å", "£Æ", "£Ç
 const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 								{-1,0},{1,0},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
-const vector<vector<short> > l1_list = { { 0,1,2,3,4,5,6,7 },
-										{ 56,57,58,59,60,61,62,63 },
-										{ 0,8,16,24,32,40,48,56 },
-										{ 7,15,23,31,39,47,55,63 }};
-const vector<vector<short> > l2_list = { { 8,9,10,11,12,13,14,15 },
-										{ 48,49,50,51,52,53,54,55 },
-										{ 1,9,17,25,33,41,49,57 },
-										{ 6,14,22,30,38,46,54,62 } };
-const vector<vector<short> > l3_list = { { 16,17,18,19,20,21,22,23 },
-										{ 40,41,42,43,44,45,46,47 },
-										{ 2,10,18,26,34,42,50,58 },
-										{ 5,13,21,29,37,45,53,61 } };
-const vector<vector<short> > l4_list = { { 24,25,26,27,28,29,30,31 },
-										{ 32,33,34,35,36,37,38,39 },
-										{ 3,11,19,27,35,43,51,59 },
-										{ 4,12,20,28,36,44,52,60 } };
-const vector<vector<short> > c5_list = { { 4,11,18,25,32 },
-										{ 3,12,21,30,39 },
-										{ 24,33,42,51,60 },
-										{ 31,38,45,52,59 } };
-const vector<vector<short> > c6_list = { { 5,12,19,26,33,40 },
-										{ 2,11,20,29,38,47 },
-										{ 16,25,34,43,52,61 },
-										{ 23,30,37,44,51,58 } };
-const vector<vector<short> > c7_list = { { 1,10,19,28,37,46,55 },
-										{ 6,13,20,27,34,41,48 },
-										{ 8,17,26,35,44,53,62 },
-										{ 15,22,29,36,43,50,57 } };
-const vector<vector<short> > c8_list = { { 0,9,18,27,36,45,54,63 },
-										{ 7,14,21,28,35,42,49,56 } };
-const vector<vector<short> > cr_list = { { 0,1,2,8,9,10,16,17 },
-										{ 7,15,23,6,14,22,5,13 },
-										{ 63,62,61,55,54,53,47,46 },
-										{ 56,48,40,57,49,41,58,50 }};
+// var_list[struct_type][struct_id][index] = place_id
+const vector< vector< vector<int> > > var_lists = {
+	{ { 0,1,2,3,4,5,6,7 },{ 56,57,58,59,60,61,62,63 },{ 0,8,16,24,32,40,48,56 },{ 7,15,23,31,39,47,55,63 },
+	{ 7,6,5,4,3,2,1,0 },{ 63,62,61,60,59,58,57,56 },{ 56,48,40,32,24,16,8,0 },{ 63,55,47,39,31,23,15,7 } },
+
+	{ { 8,9,10,11,12,13,14,15 },{ 48,49,50,51,52,53,54,55 },{ 1,9,17,25,33,41,49,57 },{ 6,14,22,30,38,46,54,62 },
+	{ 15,14,13,12,11,10,9,8 },{ 55,54,53,52,51,50,49,48 },{ 57,49,41,33,25,17,9,1 },{ 62,54,46,38,30,22,14,6 } },
+
+	{ { 16,17,18,19,20,21,22,23 },{ 40,41,42,43,44,45,46,47 },{ 2,10,18,26,34,42,50,58 },{ 5,13,21,29,37,45,53,61 },
+	{ 23,22,21,20,19,18,17,16 },{ 47,46,45,44,43,42,41,40 },{ 58,50,42,34,26,18,10,2 },{ 61,53,45,37,29,21,13,5 } },
+
+	{ { 24,25,26,27,28,29,30,31 },{ 32,33,34,35,36,37,38,39 },{ 3,11,19,27,35,43,51,59 },{ 4,12,20,28,36,44,52,60 },
+	{ 31,30,29,28,27,26,25,24 },{ 39,38,37,36,35,34,33,32 },{ 59,51,43,35,27,19,11,3 },{ 60,52,44,36,28,20,12,4 } },
+
+	{ { 4,11,18,25,32 },{ 3,12,21,30,39 },{ 24,33,42,51,60 },{ 31,38,45,52,59 },
+	{ 32,25,18,11,4 },{ 39,30,21,12,3 },{ 60,51,42,33,24 },{ 59,52,45,38,31 } },
+
+	{ { 5,12,19,26,33,40 },{ 2,11,20,29,38,47 },{ 16,25,34,43,52,61 },{ 23,30,37,44,51,58 },
+	{ 40,33,26,19,12,5 },{ 47,38,29,20,11,2 },{ 61,52,43,34,25,16 },{ 58,51,44,37,30,23 } },
+
+	{ { 1,10,19,28,37,46,55 },{ 6,13,20,27,34,41,48 },{ 8,17,26,35,44,53,62 },{ 15,22,29,36,43,50,57 },
+	{ 55,46,37,28,19,10,1 },{ 48,41,34,27,20,13,6 },{ 62,53,44,35,26,17,8 },{ 57,50,43,36,29,22,15 } },
+
+	{ { 0,9,18,27,36,45,54,63 },{ 7,14,21,28,35,42,49,56 },{ 63,54,45,36,27,18,9,0 },{ 56,49,42,35,28,21,14,7 } },
+
+	{ { 0,1,2,8,9,10,16,17 },{ 7,15,23,6,14,22,5,13 },{ 63,62,61,55,54,53,47,46 },{ 56,48,40,57,49,41,58,50 },
+	{ 0,8,16,1,9,17,2,10 },{ 7,6,5,15,14,13,23,22 },{ 63,55,47,62,54,46,61,53 },{ 56,57,58,48,49,50,40,41 }},
+
+	{ { 0,1,2,3,8,9,10,11 },{ 7,6,5,4,15,14,13,12 },{ 0,8,16,24,1,9,17,25 },{ 7,15,23,31,6,14,22,30 },
+	{ 56,57,58,59,48,49,50,51 },{ 56,48,40,42,57,49,41,33 },{ 63,62,61,60,55,54,53,52 },{ 63,55,47,39,62,54,46,38 }}
+};
+
+vector <vector<int> > struct_vars;
+
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
 	const int rand_split = 100000;
@@ -306,16 +306,6 @@ struct Board {
 	bool is_on_bot;
 	int search_depth;
 	Hereditary* herediatry;
-	vector<short> except_steps;
-	vector<int> struct_var_l1;
-	vector<int> struct_var_l2;
-	vector<int> struct_var_l3;
-	vector<int> struct_var_l4;
-	vector<int> struct_var_c5;
-	vector<int> struct_var_c6;
-	vector<int> struct_var_c7;
-	vector<int> struct_var_c8;
-	vector<int> struct_var_cr;
 
 	Board(bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -343,10 +333,10 @@ struct Board {
 		short black = bot_first ? BOT_PIECE : PLAYER_PIECE;
 		short white = bot_first ? PLAYER_PIECE : BOT_PIECE;
 		short upleft = BOARD_SIZE / 2 - 1;
-		onboard(upleft, upleft) = black;
-		onboard(upleft + 1, upleft + 1) = black;
-		onboard(upleft, upleft + 1) = white;
-		onboard(upleft + 1, upleft) = white;
+		onboard(upleft, upleft) = -black;
+		onboard(upleft + 1, upleft + 1) = -black;
+		onboard(upleft, upleft + 1) = -white;
+		onboard(upleft + 1, upleft) = -white;
 		search_depth = -1;
 		herediatry = her;
 		structvar_initial();
@@ -359,169 +349,35 @@ struct Board {
 		is_bot_first = b->is_bot_first;
 		search_depth = b->search_depth;
 		herediatry = b->herediatry;
-		struct_var_l1 = b->struct_var_l1;
-		struct_var_l2 = b->struct_var_l2;
-		struct_var_l3 = b->struct_var_l3;
-		struct_var_l4 = b->struct_var_l4;
-		struct_var_c5 = b->struct_var_c5;
-		struct_var_c6 = b->struct_var_c6;
-		struct_var_c7 = b->struct_var_c7;
-		struct_var_c8 = b->struct_var_c8;
-		struct_var_cr = b->struct_var_cr;
 	}
 	void structvar_initial() {
 		bool need_rewrite = false;
-		ifstream struct_file;
-		struct_file.open("struct/l1.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_l1.push_back(_temp);
+		for (int i = 0; i < var_lists.size(); ++i) {
+			if (struct_vars.size() <= i) {
+				struct_vars.push_back(vector<int>());
 			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				struct_var_l1.push_back(0);
+			struct_vars[i].clear();
+			ifstream struct_file;
+			int var_size = 8;
+			if (i == 4 || i == 5 || i == 6) var_size = i + 1;
+			string filename = "struct/";
+			filename += to_string(i);
+			filename += ".txt";
+			struct_file.open(filename);
+			if (struct_file.is_open()) {
+				for (int j = 0; j < pow(3, var_size); ++j) {
+					int _temp;
+					struct_file >> _temp;
+					struct_vars[i].push_back(_temp);
+				}
+				struct_file.close();
 			}
-		}
-
-		struct_file.open("struct/l2.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_l2.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				struct_var_l2.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/l3.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_l3.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				struct_var_l3.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/l4.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_l4.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-				struct_var_l4.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/c5.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, 5); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_c5.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, 5); ++i) {
-				struct_var_c5.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/c6.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, 6); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_c6.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, 6); ++i) {
-				struct_var_c6.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/c7.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, 7); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_c7.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, 7); ++i) {
-				struct_var_c7.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/c8.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, 8); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_c8.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, 8); ++i) {
-				struct_var_c8.push_back(0);
-			}
-		}
-
-		struct_file.open("struct/cr.txt");
-		if (struct_file.is_open()) {
-			for (int i = 0; i < pow(3, 8); ++i) {
-				int _temp;
-				struct_file >> _temp;
-				struct_var_cr.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int i = 0; i < pow(3, 8); ++i) {
-				struct_var_cr.push_back(0);
+			else {
+				struct_file.close();
+				need_rewrite = true;
+				for (int j = 0; j < pow(3, var_size); ++j) {
+					struct_vars[i].push_back(0);
+				}
 			}
 		}
 
@@ -530,53 +386,19 @@ struct Board {
 		}
 	}
 	void struct_write() {
-		ofstream write_file("struct/l1.txt");
-		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-			write_file << struct_var_l1[i] << endl;
+		for (int i = 0; i < 9; ++i) {
+			ofstream write_file;
+			string filename = "struct/";
+			filename += to_string(i);
+			filename += ".txt";
+			write_file.open(filename);
+			for (int j = 0; j < struct_vars[i].size(); ++j) {
+				write_file << struct_vars[i][j] << endl;
+			}
+			write_file.close();
 		}
-		write_file.close();
-		write_file.open("struct/l2.txt");
-		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-			write_file << struct_var_l2[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/l3.txt");
-		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-			write_file << struct_var_l3[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/l4.txt");
-		for (int i = 0; i < pow(3, BOARD_SIZE); ++i) {
-			write_file << struct_var_l4[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/c5.txt");
-		for (int i = 0; i < pow(3, 5); ++i) {
-			write_file << struct_var_c5[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/c6.txt");
-		for (int i = 0; i < pow(3, 6); ++i) {
-			write_file << struct_var_c6[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/c7.txt");
-		for (int i = 0; i < pow(3, 7); ++i) {
-			write_file << struct_var_c7[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/c8.txt");
-		for (int i = 0; i < pow(3, 8); ++i) {
-			write_file << struct_var_c8[i] << endl;
-		}
-		write_file.close();
-		write_file.open("struct/cr.txt");
-		for (int i = 0; i < pow(3, 8); ++i) {
-			write_file << struct_var_cr[i] << endl;
-		}
-		write_file.close();
 	}
-	// x,y's range: 0~5
+	// x,y's range: 0~BOARD_SIZE
 	short& onboard(int x, int y) {
 		if (x < 0 || x > BOARD_SIZE-1 || y < 0 || y > BOARD_SIZE-1) {
 			cout << "Error!" << endl;
@@ -767,7 +589,8 @@ struct Board {
 			Board* next_board = new Board(this);
 			next_board->new_step(next_steps[i]);
 			next_board->search_depth--;
-			pair<int,double> next_value = next_board->get_self_value(use_struct, random_move);
+			// only random at the first level
+			pair<int,double> next_value = next_board->get_self_value(use_struct);
 			delete next_board;
 			if (
 				((result.first == -1) || 
@@ -959,109 +782,20 @@ struct Board {
 	}
 	double calculate_sturct() {
 		double result = 0;
-		for (int i = 0; i < l1_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < l1_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[l1_list[i][j]] + 1;
-				_id += board[l1_list[i][l1_list[i].size() - 1 - j]] + 1;
+#pragma omp parallel for schedule(dynamic)
+		for (int i = 0; i < var_lists.size(); ++i) {
+			double _result = 0;
+			vector< vector<int> > var_list = var_lists[i];
+			for (int j = 0; j < var_list.size(); ++j) {
+				int id = 0;
+				for (int k = 0; k < var_list[j].size(); ++k) {
+					id *= 3;
+					id += board[var_list[j][k]] + 1;
+				}
+				_result += struct_vars[i][id];
 			}
-			result += struct_var_l1[id];
-			result += struct_var_l1[_id];
-		}
-		for (int i = 0; i < l2_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < l2_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[l2_list[i][j]] + 1;
-				_id += board[l2_list[i][l2_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_l2[id];
-			result += struct_var_l2[_id];
-		}
-		for (int i = 0; i < l3_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < l3_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[l3_list[i][j]] + 1;
-				_id += board[l3_list[i][l3_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_l3[id];
-			result += struct_var_l3[_id];
-		}
-		for (int i = 0; i < l4_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < l4_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[l4_list[i][j]] + 1;
-				_id += board[l4_list[i][l4_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_l4[id];
-			result += struct_var_l4[_id];
-		}
-		for (int i = 0; i < c5_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < c5_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[c5_list[i][j]] + 1;
-				_id += board[c5_list[i][c5_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_c5[id];
-			result += struct_var_c5[_id];
-		}
-		for (int i = 0; i < c6_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < c6_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[c6_list[i][j]] + 1;
-				_id += board[c6_list[i][c6_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_c6[id];
-			result += struct_var_c6[_id];
-		}
-		for (int i = 0; i < c7_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < c7_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[c7_list[i][j]] + 1;
-				_id += board[c7_list[i][c7_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_c7[id];
-			result += struct_var_c7[_id];
-		}
-		for (int i = 0; i < c8_list.size(); ++i) {
-			int id = 0;
-			int _id = 0;
-			for (int j = 0; j < c8_list[i].size(); ++j) {
-				id *= 3;
-				_id *= 3;
-				id += board[c8_list[i][j]] + 1;
-				_id += board[c8_list[i][c8_list[i].size() - 1 - j]] + 1;
-			}
-			result += struct_var_c8[id];
-			result += struct_var_c8[_id];
-		}
-		for (int i = 0; i < cr_list.size(); ++i) {
-			int id = 0;
-			for (int j = 0; j < cr_list[i].size(); ++j) {
-				id *= 3;
-				id += board[cr_list[i][j]] + 1;
-			}
-			result += struct_var_cr[id];
+#pragma omp atomic
+			result += _result;
 		}
 		return result;
 	}
@@ -1073,113 +807,21 @@ struct Board {
 	}
 	void update_struct(int power, Board* target=NULL) {
 		if (target == NULL) target = this;
-		for (int t = 0; t < l1_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < l1_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[l1_list[t][_i]] + 1;
-				id_2 += board[l1_list[t][_i]] * -1 + 1;
+#pragma omp parallel for
+		for (int i = 0; i < var_lists.size(); ++i) {
+			vector< vector<int> > var_list = var_lists[i];
+			for (int j = 0; j < var_list.size(); ++j) {
+				int id = 0;
+				int _id = 0;
+				for (int k = 0; k < var_list[j].size(); ++k) {
+					id *= 3;
+					_id *= 3;
+					id += board[var_list[j][k]] + 1;
+					_id += board[var_list[j][k]] * -1 + 1;
+				}
+				struct_vars[i][id] += power;
+				struct_vars[i][_id] += power;
 			}
-			struct_var_l1[id_1] += power;
-			struct_var_l1[id_2] -= power;
-		}
-		for (int t = 0; t < l2_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < l2_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[l2_list[t][_i]] + 1;
-				id_2 += board[l2_list[t][_i]] * -1 + 1;
-			}
-			struct_var_l2[id_1] += power;
-			struct_var_l2[id_2] -= power;
-		}
-		for (int t = 0; t < l3_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < l3_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[l3_list[t][_i]] + 1;
-				id_2 += board[l3_list[t][_i]] * -1 + 1;
-			}
-			struct_var_l3[id_1] += power;
-			struct_var_l3[id_2] -= power;
-		}
-		for (int t = 0; t < l4_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < l4_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[l4_list[t][_i]] + 1;
-				id_2 += board[l4_list[t][_i]] * -1 + 1;
-			}
-			struct_var_l4[id_1] += power;
-			struct_var_l4[id_2] -= power;
-		}
-		for (int t = 0; t < c5_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < c5_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[c5_list[t][_i]] + 1;
-				id_2 += board[c5_list[t][_i]] * -1 + 1;
-			}
-			struct_var_c5[id_1] += power;
-			struct_var_c5[id_2] -= power;
-		}
-		for (int t = 0; t < c6_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < c6_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[c6_list[t][_i]] + 1;
-				id_2 += board[c6_list[t][_i]] * -1 + 1;
-			}
-			struct_var_c6[id_1] += power;
-			struct_var_c6[id_2] -= power;
-		}
-		for (int t = 0; t < c7_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < c7_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[c7_list[t][_i]] + 1;
-				id_2 += board[c7_list[t][_i]] * -1 + 1;
-			}
-			struct_var_c7[id_1] += power;
-			struct_var_c7[id_2] -= power;
-		}
-		for (int t = 0; t < c8_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < c8_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[c8_list[t][_i]] + 1;
-				id_2 += board[c8_list[t][_i]] * -1 + 1;
-			}
-			struct_var_c8[id_1] += power;
-			struct_var_c8[id_2] -= power;
-		}
-		for (int t = 0; t < cr_list.size(); ++t) {
-			int id_1 = 0;
-			int id_2 = 0;
-			for (int _i = 0; _i < cr_list[t].size(); ++_i) {
-				id_1 *= 3;
-				id_2 *= 3;
-				id_1 += board[cr_list[t][_i]] + 1;
-				id_2 += board[cr_list[t][_i]] * -1 + 1;
-			}
-			struct_var_cr[id_1] += power;
-			struct_var_cr[id_2] -= power;
 		}
 	}
 };
