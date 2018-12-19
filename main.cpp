@@ -15,15 +15,13 @@ using namespace std;
 #define EMPTY_PIECE 0
 
 #define BOARD_SIZE 8
-#define FINAL_POWER 10000
+#define FINAL_POWER 1
 #define HEREDITART_PER_THREAD 3
 
 #define SEARCH_MAX_DEPTH 7 // search depth
 #define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
-
-#define IMPORTANT_POWER 3
 
 const vector<string> full_alpha_list = { "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ",
 									"Ｈ", "Ｉ", "Ｊ", "Ｋ", "Ｌ", "Ｍ", "Ｎ",
@@ -66,6 +64,7 @@ const vector< vector< vector<int> > > var_lists = {
 
 vector <vector<int> > struct_vars;
 vector <int> move_var;
+void struct_write();
 
 double get_range_rand(double rand_min, double rand_max) {
 	double range = rand_max - rand_min;
@@ -359,8 +358,7 @@ struct Board {
 			}
 			struct_vars[i].clear();
 			ifstream struct_file;
-			int var_size = 8;
-			if (i == 4 || i == 5 || i == 6) var_size = i + 1;
+			int var_size = var_lists[i][0].size();
 			string filename = "struct/";
 			filename += to_string(i);
 			filename += ".txt";
@@ -404,24 +402,6 @@ struct Board {
 		if (need_rewrite) {
 			struct_write();
 		}
-	}
-	void struct_write() {
-		for (int i = 0; i < struct_vars.size(); ++i) {
-			ofstream write_file;
-			string filename = "struct/";
-			filename += to_string(i);
-			filename += ".txt";
-			write_file.open(filename);
-			for (int j = 0; j < struct_vars[i].size(); ++j) {
-				write_file << struct_vars[i][j] << endl;
-			}
-			write_file.close();
-		}
-		ofstream write_file("struct/move.txt");
-		for (int i = 0; i < 3600; ++i) {
-			write_file << move_var[i] << endl;
-		}
-		write_file.close();
 	}
 	// x,y's range: 0~BOARD_SIZE
 	short& onboard(int x, int y) {
@@ -565,7 +545,7 @@ struct Board {
 		short next_step_id = expection.first;
 		if (debug) {
 			cout << "电脑认为能够达到的期望值：" << expection.second << endl;
-			cout << "电脑下子：(" << 1 + next_step_id % BOARD_SIZE << ", " << 1 + next_step_id / BOARD_SIZE << ")。" << endl;
+			cout << "电脑下子：(" << 1 + next_step_id / BOARD_SIZE << ", " << 1 + next_step_id % BOARD_SIZE << ")。" << endl;
 		}
 		new_step(next_step_id);
 		return next_step_id;
@@ -600,7 +580,7 @@ struct Board {
 		if (search_depth == 0) {
 			double value;
 			if (use_struct) {
-				value = calculate_sturct();
+				value = calculate_struct();
 			}
 			else {
 				value = calculate_current_value();
@@ -805,10 +785,27 @@ struct Board {
 		}
 		return result;
 	}
-	double calculate_sturct() {
+	double calculate_struct() {
+		int current_stage = 0;
+		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+			if (board[i] == 0) current_stage++;
+		}
+		if (current_stage == 0) {
+			int value = 0;
+			bool has_bot = false;
+			bool has_player = false;
+			for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+				if (!has_bot && board[i] == BOT_PIECE) has_bot = true;
+				if (!has_player && board[i] == PLAYER_PIECE) has_player = true;
+				value += board[i];
+			}
+			if (!has_player) value = BOARD_SIZE*BOARD_SIZE;
+			else if (!has_player) value = -BOARD_SIZE*BOARD_SIZE;
+			return value*FINAL_POWER;
+		}
 		double result = 0;
 		// board struct
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < var_lists.size(); ++i) {
 			double _result = 0;
 			vector< vector<int> > var_list = var_lists[i];
@@ -824,13 +821,14 @@ struct Board {
 			result += _result;
 		}
 		// move struct
-		int current_stage = 0;
-		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
-			if (board[i] == 0) current_stage++;
+		if (current_stage != 60) {
+			int move_power = next_possible().size();
+			int move_id = (current_stage) * 60 + move_power;
+			result += move_var[move_id];
+			move_power = enemy_possible().size();
+			move_id = current_stage * 60 + move_power;
+			result -= move_var[move_id];
 		}
-		int move_power = next_possible().size();
-		int move_id = current_stage * 60 + move_power;
-		result += move_var[move_id];
 		return result;
 	}
 	void all_reverse() {
@@ -839,38 +837,65 @@ struct Board {
 			else if (board[i] == PLAYER_PIECE) board[i] = BOT_PIECE;
 		}
 	}
-	void update_struct(int power, Board* target=NULL) {
-		if (target == NULL) target = this;
-		// struct update
+};
+
+void update_struct(int power, Board* target, short index = -1) {
+	// struct update
 #pragma omp parallel for
-		for (int i = 0; i < var_lists.size(); ++i) {
-			vector< vector<int> > var_list = var_lists[i];
-			for (int j = 0; j < var_list.size(); ++j) {
-				int id = 0;
-				int _id = 0;
-				for (int k = 0; k < var_list[j].size(); ++k) {
-					id *= 3;
-					_id *= 3;
-					id += board[var_list[j][k]] + 1;
-					_id += board[var_list[j][k]] * -1 + 1;
+	for (int i = 0; i < var_lists.size(); ++i) {
+		vector< vector<int> > var_list = var_lists[i];
+		for (int j = 0; j < var_list.size(); ++j) {
+			int id = 0;
+			int _id = 0;
+			bool included = false;
+			for (int k = 0; k < var_list[j].size(); ++k) {
+				if (var_list[j][k] == index) {
+					included = true;
 				}
+				id *= 3;
+				_id *= 3;
+				id += target->board[var_list[j][k]] + 1;
+				_id += target->board[var_list[j][k]] * -1 + 1;
+			}
+			if (index == -1 || included) {
 				struct_vars[i][id] += power;
 				struct_vars[i][_id] += power;
 			}
 		}
-		// move update;
-		int current_stage = 0;
-		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
-			if (target->board[i] == 0) current_stage++;
-		}
-		int bot_move = target->next_possible().size();
-		int enemy_move = target->enemy_possible().size();
-		int bot_id = current_stage * 60 + bot_move;
-		int enemy_id = current_stage * 60 + enemy_move;
-		move_var[bot_id] += power;
-		move_var[enemy_id] -= power;
 	}
-};
+	// move update;
+	int current_stage = 0;
+	for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
+		if (target->board[i] == 0) current_stage++;
+	}
+	int bot_move = target->next_possible().size();
+	int enemy_move = target->enemy_possible().size();
+	int bot_id = current_stage * 60 + bot_move;
+	int enemy_id = current_stage * 60 + enemy_move;
+#pragma omp atomic
+	move_var[bot_id] += power;
+#pragma omp atomic
+	move_var[enemy_id] -= power;
+}
+
+void struct_write() {
+	for (int i = 0; i < struct_vars.size(); ++i) {
+		ofstream write_file;
+		string filename = "struct/";
+		filename += to_string(i);
+		filename += ".txt";
+		write_file.open(filename);
+		for (int j = 0; j < struct_vars[i].size(); ++j) {
+			write_file << struct_vars[i][j] << endl;
+		}
+		write_file.close();
+	}
+	ofstream write_file("struct/move.txt");
+	for (int i = 0; i < 3600; ++i) {
+		write_file << move_var[i] << endl;
+	}
+	write_file.close();
+}
 
 int pvc() {
 	while (true) {
@@ -909,6 +934,7 @@ int pvc() {
 		}
 		use_struct = _ip == 1;
 		vector<Board*> board_records;
+		vector<short> bot_moves;
 		while (true) {
 			cout << endl;
 			cout << "--------------------------------------" << endl;
@@ -929,11 +955,18 @@ int pvc() {
 					continue;
 				}
 			}
-			current->calculate_current_value(true);
+			if (!use_struct) {
+				current->calculate_current_value(true);
+			}
+			else {
+				cout << "总评估值：" << current->calculate_struct() << "。" << endl;
+			}
+			
 			if (current->is_on_bot) {
 				cout << "电脑思考中..." << endl;
 				short this_record = current->bot_on_ideal_step(true, use_struct,true);
 				record.push_back(this_record);
+				bot_moves.push_back(this_record);
 			}
 			else {
 				bool rollback = false;
@@ -984,6 +1017,7 @@ int pvc() {
 					board_records.pop_back();
 					record.pop_back();
 					record.pop_back();
+					bot_moves.pop_back();
 				}
 				else {
 					Board* b_copy = new Board(current);
@@ -1006,12 +1040,11 @@ int pvc() {
 			}
 			if (i % 10 == 9) cout << endl;
 		}
-		int isbotwin = value < 0 ? 1 : -1;
 		for (int i = 0; i < board_records.size(); ++i) {
-			current->update_struct(isbotwin, board_records[i]);
+			update_struct(value/FINAL_POWER, board_records[i], bot_moves[i]);
 			delete board_records[i];
 		}
-		current->struct_write();
+		struct_write();
 		cout << endl;
 		mode = -1;
 		while (mode == -1) {
@@ -1033,13 +1066,17 @@ int pvc() {
 	return 0;
 }
 
-void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool use_struct = false) {
+void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool first_struct = false, bool second_struct = false) {
 	her_first->total_play += 2;
 	her_second->total_play += 2;
 	Board* first_board = new Board(her_first, true);
 	Board* second_board = new Board(her_second, false);
 	bool is_on_first = true;
 	// play
+	vector<Board*> first_records;
+	vector<short> first_moves;
+	vector<Board*> second_records;
+	vector<short> second_moves;
 	while (true) {
 		if (debug) {
 			cout << "--------------------------------------" << endl;
@@ -1053,8 +1090,17 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 				string piece = (is_on_first) ? "●" : "○";
 				cout << "当前执棋：" << piece << endl;
 			}
-			short step = current_board->bot_on_ideal_step(debug);
+			short step = current_board->bot_on_ideal_step(debug, (is_on_first && first_struct) || (!is_on_first && second_struct), true);
 			next_board->new_step(step);
+			Board* copy = new Board(current_board);
+			if (is_on_first) {
+				first_records.push_back(copy);
+				first_moves.push_back(step);
+			}
+			else {
+				second_records.push_back(copy);
+				second_moves.push_back(step);
+			}
 		}
 		else {
 			// end?
@@ -1075,14 +1121,26 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		is_on_first = !is_on_first;
 	}
 	// calculate score
-	double first_score = first_board->get_self_value(use_struct).second / FINAL_POWER;
-	double second_score = second_board->get_self_value(use_struct).second / FINAL_POWER;
+	double first_score = first_board->get_self_value(first_struct).second / FINAL_POWER;
+	double second_score = second_board->get_self_value(second_struct).second / FINAL_POWER;
 	delete first_board;
 	delete second_board;
 	if (first_score * second_score > 0) {
 		cout << "Error score!" << endl;
 		system("pause");
 		throw;
+	}
+	for (int i = 0; i < first_records.size(); ++i) {
+		int step = first_moves[i];
+		Board* board = first_records[i];
+		update_struct(first_score, board, step);
+		delete board;
+	}
+	for (int i = 0; i < second_records.size(); ++i) {
+		int step = second_moves[i];
+		Board* board = second_records[i];
+		update_struct(second_score, board, step);
+		delete board;
 	}
 	if (first_score > 0) {
 		if (debug) {
@@ -1212,8 +1270,8 @@ int cvc() {
 		cout << "请输入2号电脑需要读取的数据所在的文件：";
 		cin >> filename;
 		Hereditary* her_2 = new Hereditary(filename);
-		play_with_her(her_1, her_2, true);
-		play_with_her(her_2, her_1, true);
+		play_with_her(her_1, her_2, true, false, true);
+		play_with_her(her_2, her_1, true, true, false);
 		cout << endl << "结果：\n1号电脑胜：" << her_1->total_win << endl << "2号电脑胜：" << her_2->total_win << endl;
 		mode = -1;
 		while (mode == -1) {
@@ -1239,19 +1297,17 @@ int cvc() {
 	return 0;
 }
 
-int struct_train(bool debug = true) {
+int struct_train(Board* board, bool debug = true) {
 	int times = 0;
 	while (times++<10000) {
-		vector<Board*> records;
-		Board* run_board = new Board(true);
+		vector<pair<Board*,short> > records;
+		Board* run_board = new Board(board);
 		while (true) {
-			Board* record = new Board(run_board);
-			records.push_back(record);
 			if (debug) {
 				cout << "--------------------------------------" << endl;
 				run_board->print();
 				cout << "当前执子：" << ((run_board->is_bot_first ^ run_board->is_on_bot) ? "○" : "●")  << endl;
-				cout << "当前期望值：" << (run_board->calculate_sturct()) << endl;
+				cout << "当前期望值：" << (run_board->calculate_struct()) << endl;
 			}
 			vector<short> current_steps = run_board->next_possible();
 			if (current_steps.size() == 0) {
@@ -1271,7 +1327,9 @@ int struct_train(bool debug = true) {
 					continue;
 				}
 			}
-			run_board->bot_on_ideal_step(debug,true,true);
+			short nextstep = run_board->bot_on_ideal_step(debug,true,true);
+			Board* record = new Board(run_board);
+			records.push_back(pair<Board*,short>(record,nextstep));
 			run_board->all_reverse();
 			run_board->is_bot_first = !run_board->is_bot_first;
 			run_board->is_on_bot = !run_board->is_on_bot;
@@ -1280,22 +1338,42 @@ int struct_train(bool debug = true) {
 		double value = run_board->get_self_value(false).second;
 		bool winner = (run_board->is_bot_first ^ (value > 0));
 		for (int i = 0; i < records.size(); ++i) {
-			Board* record = records[i];
-			// true=white, false=black
+			Board* record = records[i].first;
+			// true=black, false=white
 			bool current_color = (record->is_bot_first ^ record->is_on_bot);
-			int isselfwin = (winner ^ current_color) ? -1 : 1;
-			run_board->update_struct(isselfwin, record);
+			int isselfwin = (winner ^ current_color) ? 1 : -1;
+			isselfwin *= abs(value);
+			update_struct(isselfwin, record, records[i].second);
 			delete record;
 		}
-		run_board->struct_write();
+		struct_write();
 		delete run_board;
 	}
 	return 0;
 }
 
-int main() {
+int struct_train_main() {
+	int thread_size = omp_get_max_threads() / 2;
+	int times = 0;
+	while (times++ < 10000) {
+		int rand_spector = rand() % (thread_size);
+		Board* run_board = new Board(true);
+#pragma omp parallel for
+		for (int i = 0; i < thread_size; ++i) {
+			struct_train(run_board, i == rand_spector);
+		}
+		struct_write();
+		delete run_board;
+	}
+	return 0;
+}
+
+int main(int argc, char *argv[]) {
 	srand(time(NULL));
 	int mode = -1;
+	if (argc > 1) {
+		mode = atoi(argv[1]);
+	}
 	while (mode == -1) {
 		cout << "请选择模式(0=训练, 1=人机，2=电脑对战,3):";
 		cin >> mode;
@@ -1319,8 +1397,7 @@ int main() {
 		cvc(); 
 	}
 	else {
-		struct_train();
+		struct_train_main();
 	}
-	
 	return 0;
 }
