@@ -544,7 +544,8 @@ struct Board {
 		pair<int, double> expection = get_self_value(use_struct, random_move);
 		short next_step_id = expection.first;
 		if (debug) {
-			cout << "电脑认为能够达到的期望值：" << expection.second << endl;
+			string type = (use_struct ? "(模板评估)" : "(全局评估)");
+			cout << "电脑认为能够达到的期望值：" << type << expection.second << endl;
 			cout << "电脑下子：(" << 1 + next_step_id / BOARD_SIZE << ", " << 1 + next_step_id % BOARD_SIZE << ")。" << endl;
 		}
 		new_step(next_step_id);
@@ -822,11 +823,20 @@ struct Board {
 		}
 		// move struct
 		if (current_stage != 60) {
-			int move_power = next_possible().size();
-			int move_id = (current_stage) * 60 + move_power;
+			int move_power_1 = next_possible().size();
+			int move_power_2 = enemy_possible().size();
+			int bot_move_power, enemy_move_power;
+			if (is_on_bot) {
+				bot_move_power = move_power_1;
+				enemy_move_power = move_power_2;
+			}
+			else {
+				bot_move_power = move_power_2;
+				enemy_move_power = move_power_1;
+			}
+			int move_id = (current_stage) * 60 + bot_move_power;
 			result += move_var[move_id];
-			move_power = enemy_possible().size();
-			move_id = current_stage * 60 + move_power;
+			move_id = current_stage * 60 + enemy_move_power;
 			result -= move_var[move_id];
 		}
 		return result;
@@ -841,7 +851,7 @@ struct Board {
 
 void update_struct(int power, Board* target, short index = -1) {
 	// struct update
-#pragma omp parallel for
+	//#pragma omp parallel for
 	for (int i = 0; i < var_lists.size(); ++i) {
 		vector< vector<int> > var_list = var_lists[i];
 		for (int j = 0; j < var_list.size(); ++j) {
@@ -858,8 +868,10 @@ void update_struct(int power, Board* target, short index = -1) {
 				_id += target->board[var_list[j][k]] * -1 + 1;
 			}
 			if (index == -1 || included) {
+#pragma omp atomic
 				struct_vars[i][id] += power;
-				struct_vars[i][_id] += power;
+#pragma omp atomic
+				struct_vars[i][_id] -= power;
 			}
 		}
 	}
@@ -868,8 +880,17 @@ void update_struct(int power, Board* target, short index = -1) {
 	for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
 		if (target->board[i] == 0) current_stage++;
 	}
-	int bot_move = target->next_possible().size();
-	int enemy_move = target->enemy_possible().size();
+	int bot_move, enemy_move;
+	int move_power_1 = target->next_possible().size();
+	int move_power_2 = target->enemy_possible().size();
+	if (target->is_on_bot) {
+		bot_move = move_power_1;
+		enemy_move = move_power_2;
+	}
+	else {
+		bot_move = move_power_2;
+		enemy_move = move_power_1;
+	}
 	int bot_id = current_stage * 60 + bot_move;
 	int enemy_id = current_stage * 60 + enemy_move;
 #pragma omp atomic
@@ -1272,6 +1293,7 @@ int cvc() {
 		Hereditary* her_2 = new Hereditary(filename);
 		play_with_her(her_1, her_2, true, false, true);
 		play_with_her(her_2, her_1, true, true, false);
+		struct_write();
 		cout << endl << "结果：\n1号电脑胜：" << her_1->total_win << endl << "2号电脑胜：" << her_2->total_win << endl;
 		mode = -1;
 		while (mode == -1) {
