@@ -13,12 +13,14 @@ using namespace std;
 #define BOT_PIECE 1
 #define PLAYER_PIECE -1
 #define EMPTY_PIECE 0
+#define BLACK_PIECE "●"
+#define WHITE_PIECE "○"
 
 #define BOARD_SIZE 8
 #define FINAL_POWER 1
 #define HEREDITART_PER_THREAD 3
 
-#define SEARCH_MAX_DEPTH 7 // search depth
+#define SEARCH_MAX_DEPTH 5 // search depth
 #define SEARCH_MAX_DEPTH_END 13 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
@@ -32,38 +34,48 @@ const short find_dir[8][2] = { {-1,-1},{0,-1},{1,-1},
 							{ -1,1 },{ 0,1 },{ 1,1 }};
 // var_list[struct_type][struct_id][index] = place_id
 const vector< vector< vector<int> > > var_lists = {
+	// first line
 	{ { 0,1,2,3,4,5,6,7 },{ 56,57,58,59,60,61,62,63 },{ 0,8,16,24,32,40,48,56 },{ 7,15,23,31,39,47,55,63 },
 	{ 7,6,5,4,3,2,1,0 },{ 63,62,61,60,59,58,57,56 },{ 56,48,40,32,24,16,8,0 },{ 63,55,47,39,31,23,15,7 } },
-
+	// second line
 	{ { 8,9,10,11,12,13,14,15 },{ 48,49,50,51,52,53,54,55 },{ 1,9,17,25,33,41,49,57 },{ 6,14,22,30,38,46,54,62 },
 	{ 15,14,13,12,11,10,9,8 },{ 55,54,53,52,51,50,49,48 },{ 57,49,41,33,25,17,9,1 },{ 62,54,46,38,30,22,14,6 } },
-
+	// third line
 	{ { 16,17,18,19,20,21,22,23 },{ 40,41,42,43,44,45,46,47 },{ 2,10,18,26,34,42,50,58 },{ 5,13,21,29,37,45,53,61 },
 	{ 23,22,21,20,19,18,17,16 },{ 47,46,45,44,43,42,41,40 },{ 58,50,42,34,26,18,10,2 },{ 61,53,45,37,29,21,13,5 } },
-
+	// forth line
 	{ { 24,25,26,27,28,29,30,31 },{ 32,33,34,35,36,37,38,39 },{ 3,11,19,27,35,43,51,59 },{ 4,12,20,28,36,44,52,60 },
 	{ 31,30,29,28,27,26,25,24 },{ 39,38,37,36,35,34,33,32 },{ 59,51,43,35,27,19,11,3 },{ 60,52,44,36,28,20,12,4 } },
-
+	// 5-length corner
 	{ { 4,11,18,25,32 },{ 3,12,21,30,39 },{ 24,33,42,51,60 },{ 31,38,45,52,59 },
 	{ 32,25,18,11,4 },{ 39,30,21,12,3 },{ 60,51,42,33,24 },{ 59,52,45,38,31 } },
-
+	// 6-length corner
 	{ { 5,12,19,26,33,40 },{ 2,11,20,29,38,47 },{ 16,25,34,43,52,61 },{ 23,30,37,44,51,58 },
 	{ 40,33,26,19,12,5 },{ 47,38,29,20,11,2 },{ 61,52,43,34,25,16 },{ 58,51,44,37,30,23 } },
-
+	// 7-length corner
 	{ { 1,10,19,28,37,46,55 },{ 6,13,20,27,34,41,48 },{ 8,17,26,35,44,53,62 },{ 15,22,29,36,43,50,57 },
 	{ 55,46,37,28,19,10,1 },{ 48,41,34,27,20,13,6 },{ 62,53,44,35,26,17,8 },{ 57,50,43,36,29,22,15 } },
-
+	// 8-length corner
 	{ { 0,9,18,27,36,45,54,63 },{ 7,14,21,28,35,42,49,56 },{ 63,54,45,36,27,18,9,0 },{ 56,49,42,35,28,21,14,7 } },
-
-	{ { 0,1,2,8,9,10,16,17 },{ 7,15,23,6,14,22,5,13 },{ 63,62,61,55,54,53,47,46 },{ 56,48,40,57,49,41,58,50 },
-	{ 0,8,16,1,9,17,2,10 },{ 7,6,5,15,14,13,23,22 },{ 63,55,47,62,54,46,61,53 },{ 56,57,58,48,49,50,40,41 }},
-
+	// corner 3*3
+	{ { 0,1,2,8,9,10,16,17,18 },{ 7,15,23,6,14,22,5,13,21 },{ 63,62,61,55,54,53,47,46,45 },{ 56,48,40,57,49,41,58,50,42 },
+	{ 0,8,16,1,9,17,2,10,18 },{ 7,6,5,15,14,13,23,22,21 },{ 63,55,47,62,54,46,61,53,45 },{ 56,57,58,48,49,50,40,41,42 }},
+	// corner 2*4
 	{ { 0,1,2,3,8,9,10,11 },{ 7,6,5,4,15,14,13,12 },{ 0,8,16,24,1,9,17,25 },{ 7,15,23,31,6,14,22,30 },
-	{ 56,57,58,59,48,49,50,51 },{ 56,48,40,42,57,49,41,33 },{ 63,62,61,60,55,54,53,52 },{ 63,55,47,39,62,54,46,38 }}
+	{ 56,57,58,59,48,49,50,51 },{ 56,48,40,42,57,49,41,33 },{ 63,62,61,60,55,54,53,52 },{ 63,55,47,39,62,54,46,38 } },
+	// near-corner 3*3
+	{{ 1,2,3,9,10,11,17,18,19},{ 1,9,17,2,10,18,3,11,19},{ 8,9,10,16,17,18,24,25,26},{ 8,16,24,9,17,25,10,18,26 },
+	{ 6,5,4,14,13,12,22,21,20},{ 6,14,22,5,13,21,4,12,20},{ 15,14,13,23,22,21,31,30,29},{ 15,23,31,14,22,30,13,21,29 },
+	{ 48,49,50,40,41,42,32,33,34 },{ 48,40,32,49,41,33,50,42,34 },{ 57,58,59,49,50,51,41,42,43 },{ 57,49,41,58,50,42,59,51,43 },
+	{ 55,54,53,47,46,45,39,38,37 },{ 55,47,39,54,46,38,53,45,37 },{ 62,61,60,54,53,52,46,45,44 },{ 62,54,46,61,53,45,60,52,44 }},
+	// near-edge 3*3
+	{{ 9,10,11,17,18,19,25,26,27 },{ 9,17,25,10,18,26,11,19,27 },{ 14,13,12,22,21,20,30,29,28 },{ 14,22,30,13,21,29,12,20,28 },
+	{ 49,50,51,41,42,43,33,34,35 },{ 49,41,33,50,42,34,51,43,35 },{ 54,53,52,46,45,44,38,37,36 },{ 54,46,38,53,45,37,52,44,36 }}
 };
 
 vector <vector<int> > struct_vars;
 vector <int> move_var;
+int move_count = 1;
 void struct_write();
 
 double get_range_rand(double rand_min, double rand_max) {
@@ -352,6 +364,7 @@ struct Board {
 	}
 	void structvar_initial() {
 		bool need_rewrite = false;
+		move_count = 1;
 		for (int i = 0; i < var_lists.size(); ++i) {
 			if (struct_vars.size() <= i) {
 				struct_vars.push_back(vector<int>());
@@ -364,10 +377,17 @@ struct Board {
 			filename += ".txt";
 			struct_file.open(filename);
 			if (struct_file.is_open()) {
+				bool need_calculate = (move_count == 1);
 				for (int j = 0; j < pow(3, var_size); ++j) {
 					int _temp;
 					struct_file >> _temp;
 					struct_vars[i].push_back(_temp);
+					if (need_calculate && _temp > 0) {
+						move_count += _temp;
+					}
+				}
+				if (need_calculate && move_count > 1) {
+					move_count--;
 				}
 				struct_file.close();
 			}
@@ -450,8 +470,8 @@ struct Board {
 	void print(bool print_optimal = false) {
 		vector<short> optimal;
 		if (print_optimal) optimal = next_possible();
-		string bot_piece = (is_bot_first) ? "●" : "○";
-		string player_piece = (is_bot_first) ? "○" : "●";
+		string bot_piece = (is_bot_first) ? BLACK_PIECE : WHITE_PIECE;
+		string player_piece = (is_bot_first) ? WHITE_PIECE : BLACK_PIECE;
 		string block = "";
 		for (int i = 0; i < BOARD_SIZE; ++i) {
 			block += "━";
@@ -839,7 +859,7 @@ struct Board {
 			move_id = current_stage * 60 + enemy_move_power;
 			result -= move_var[move_id];
 		}
-		return result;
+		return result / move_count;
 	}
 	void all_reverse() {
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
@@ -936,7 +956,8 @@ int pvc() {
 				mode = -1;
 			}
 		}
-		string your = (mode) ? "(白子○)" : "(黑子●)";
+		string your = (mode) ? WHITE_PIECE : BLACK_PIECE;
+		your = "(" + your + ")";
 		Board* current = new Board(initial_her,mode == 1);
 		bool use_struct = false;
 		int _ip = -1;
@@ -1062,7 +1083,7 @@ int pvc() {
 			if (i % 10 == 9) cout << endl;
 		}
 		for (int i = 0; i < board_records.size(); ++i) {
-			update_struct(value/FINAL_POWER, board_records[i], bot_moves[i]);
+			update_struct(value / FINAL_POWER, board_records[i], bot_moves[i]);
 			delete board_records[i];
 		}
 		struct_write();
@@ -1108,7 +1129,7 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		vector<short> current_steps = current_board->next_possible();
 		if (current_steps.size() != 0) {
 			if (debug) {
-				string piece = (is_on_first) ? "●" : "○";
+				string piece = (is_on_first) ? BLACK_PIECE : WHITE_PIECE;
 				cout << "当前执棋：" << piece << endl;
 			}
 			short step = current_board->bot_on_ideal_step(debug, (is_on_first && first_struct) || (!is_on_first && second_struct), true);
@@ -1328,7 +1349,7 @@ int struct_train(Board* board, bool debug = true) {
 			if (debug) {
 				cout << "--------------------------------------" << endl;
 				run_board->print();
-				cout << "当前执子：" << ((run_board->is_bot_first ^ run_board->is_on_bot) ? "○" : "●")  << endl;
+				cout << "当前执子：" << ((run_board->is_bot_first ^ run_board->is_on_bot) ? WHITE_PIECE : BLACK_PIECE)  << endl;
 				cout << "当前期望值：" << (run_board->calculate_struct()) << endl;
 			}
 			vector<short> current_steps = run_board->next_possible();
