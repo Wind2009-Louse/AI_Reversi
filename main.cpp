@@ -74,8 +74,9 @@ const vector< vector< vector<int> > > var_lists = {
 };
 
 vector <vector<int> > struct_vars;
+vector <vector<int> > struct_times;
 vector <int> move_var;
-int move_count = 1;
+vector <int> move_times;
 void struct_write();
 
 double get_range_rand(double rand_min, double rand_max) {
@@ -364,30 +365,27 @@ struct Board {
 	}
 	void structvar_initial() {
 		bool need_rewrite = false;
-		move_count = 1;
 		for (int i = 0; i < var_lists.size(); ++i) {
 			if (struct_vars.size() <= i) {
 				struct_vars.push_back(vector<int>());
 			}
+			if (struct_times.size() <= i) {
+				struct_times.push_back(vector<int>());
+			}
 			struct_vars[i].clear();
+			struct_times[i].clear();
 			ifstream struct_file;
 			int var_size = var_lists[i][0].size();
+			
 			string filename = "struct/";
 			filename += to_string(i);
 			filename += ".txt";
 			struct_file.open(filename);
 			if (struct_file.is_open()) {
-				bool need_calculate = (move_count == 1);
 				for (int j = 0; j < pow(3, var_size); ++j) {
 					int _temp;
 					struct_file >> _temp;
 					struct_vars[i].push_back(_temp);
-					if (need_calculate && _temp > 0) {
-						move_count += _temp;
-					}
-				}
-				if (need_calculate && move_count > 1) {
-					move_count--;
 				}
 				struct_file.close();
 			}
@@ -398,9 +396,30 @@ struct Board {
 					struct_vars[i].push_back(0);
 				}
 			}
+
+			filename = "struct/t_";
+			filename += to_string(i);
+			filename += ".txt";
+			struct_file.open(filename);
+			if (struct_file.is_open()) {
+				for (int j = 0; j < pow(3, var_size); ++j) {
+					int _temp;
+					struct_file >> _temp;
+					struct_times[i].push_back(_temp);
+				}
+				struct_file.close();
+			}
+			else {
+				struct_file.close();
+				need_rewrite = true;
+				for (int j = 0; j < pow(3, var_size); ++j) {
+					struct_times[i].push_back(0);
+				}
+			}
 		}
 		// move
 		move_var.clear();
+		move_times.clear();
 		ifstream struct_file;
 		struct_file.open("struct/move.txt");
 		if (struct_file.is_open()) {
@@ -416,6 +435,22 @@ struct Board {
 			need_rewrite = true;
 			for (int j = 0; j < 3600; ++j) {
 				move_var.push_back(0);
+			}
+		}
+		struct_file.open("struct/t_move.txt");
+		if (struct_file.is_open()) {
+			for (int j = 0; j < 3600; ++j) {
+				int _temp;
+				struct_file >> _temp;
+				move_times.push_back(_temp);
+			}
+			struct_file.close();
+		}
+		else {
+			struct_file.close();
+			need_rewrite = true;
+			for (int j = 0; j < 3600; ++j) {
+				move_times.push_back(0);
 			}
 		}
 
@@ -836,7 +871,7 @@ struct Board {
 					id *= 3;
 					id += board[var_list[j][k]] + 1;
 				}
-				_result += struct_vars[i][id];
+				_result += (double)struct_vars[i][id] / (struct_times[i][id] == 0 ? 1 : struct_times[i][id]);
 			}
 #pragma omp atomic
 			result += _result;
@@ -855,11 +890,11 @@ struct Board {
 				enemy_move_power = move_power_1;
 			}
 			int move_id = (current_stage) * 60 + bot_move_power;
-			result += move_var[move_id];
+			result += (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]);
 			move_id = current_stage * 60 + enemy_move_power;
-			result -= move_var[move_id];
+			result -= (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]);
 		}
-		return result / move_count;
+		return result;
 	}
 	void all_reverse() {
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
@@ -887,11 +922,14 @@ void update_struct(int power, Board* target, short index = -1) {
 				id += target->board[var_list[j][k]] + 1;
 				_id += target->board[var_list[j][k]] * -1 + 1;
 			}
-			if (index == -1 || included) {
-#pragma omp atomic
-				struct_vars[i][id] += power;
-#pragma omp atomic
-				struct_vars[i][_id] -= power;
+			if (index == -1 || included) {				
+#pragma omp critical
+				{
+					struct_vars[i][id] += power;
+					struct_vars[i][_id] -= power;
+					struct_times[i][id] ++;
+					struct_times[i][_id] ++;
+				}
 			}
 		}
 	}
@@ -913,10 +951,13 @@ void update_struct(int power, Board* target, short index = -1) {
 	}
 	int bot_id = current_stage * 60 + bot_move;
 	int enemy_id = current_stage * 60 + enemy_move;
-#pragma omp atomic
-	move_var[bot_id] += power;
-#pragma omp atomic
-	move_var[enemy_id] -= power;
+#pragma omp critical
+	{
+		move_var[bot_id] += power;
+		move_var[enemy_id] -= power;
+		move_times[bot_id]++;
+		move_times[enemy_id]++;
+	}
 }
 
 void struct_write() {
@@ -931,9 +972,25 @@ void struct_write() {
 		}
 		write_file.close();
 	}
+	for (int i = 0; i < struct_times.size(); ++i) {
+		ofstream write_file;
+		string filename = "struct/t_";
+		filename += to_string(i);
+		filename += ".txt";
+		write_file.open(filename);
+		for (int j = 0; j < struct_times[i].size(); ++j) {
+			write_file << struct_times[i][j] << endl;
+		}
+		write_file.close();
+	}
 	ofstream write_file("struct/move.txt");
 	for (int i = 0; i < 3600; ++i) {
 		write_file << move_var[i] << endl;
+	}
+	write_file.close();
+	write_file.open("struct/t_move.txt");
+	for (int i = 0; i < 3600; ++i) {
+		write_file << move_times[i] << endl;
 	}
 	write_file.close();
 }
