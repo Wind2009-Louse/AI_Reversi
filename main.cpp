@@ -21,7 +21,7 @@ using namespace std;
 #define HEREDITART_PER_THREAD 3
 
 #define SEARCH_MAX_DEPTH 5 // search depth
-#define SEARCH_MAX_DEPTH_END 13 // search depth while at end
+#define SEARCH_MAX_DEPTH_END 10 // search depth while at end
 #define MOVE_INITIAL_POWER 5 // move power at first(cut down as more pieces on board)
 #define MOVE_DIFF_POWER 2 // power makes by move possibility's difference
 
@@ -116,6 +116,8 @@ struct Hereditary {
 	unsigned int total_win;
 	unsigned int total_play;
 
+	vector<double> struct_powers;
+
 	Hereditary(string filename="", short t = 0) {
 		if (filename == "") {
 			filename = "Hereditary.txt";
@@ -130,6 +132,18 @@ struct Hereditary {
 				powers.push_back(temp);
 			}
 			ifile.close();
+			if (powers[0] == 2) {
+				type = 2;
+				struct_powers.clear();
+				for (int i = 1; i < powers.size(); ++i) {
+					struct_powers.push_back(powers[i]);
+				}
+				total_play = 0;
+				total_win = 0;
+				cout << "Read from file(type=2)!" << endl;
+				set();
+				return;
+			}
 			if (powers.size() == 11) {
 				move_initial_power = powers[0];
 				move_diff_power = powers[1];
@@ -187,6 +201,17 @@ struct Hereditary {
 		set();
 	}
 	Hereditary(Hereditary* copy) {
+		type = copy->type;
+		if (type == 2) {
+			struct_powers.clear();
+			for (int i = 0; i < copy->struct_powers.size(); ++i) {
+				struct_powers.push_back(copy->struct_powers[i]);
+			}
+			total_win = 0;
+			total_play = 0;
+			set();
+			return;
+		}
 		move_initial_power = copy->move_initial_power;
 		move_diff_power = copy->move_diff_power;
 		corner_power = copy->corner_power;
@@ -198,7 +223,6 @@ struct Hereditary {
 		unstable_power = copy->unstable_power;
 		non_current_move_power = copy->non_current_move_power;
 		importance_power = copy->importance_power;
-		type = copy->type;
 		total_win = 0;
 		total_play = 0;
 		set();
@@ -215,6 +239,16 @@ struct Hereditary {
 	}
 	
 	void set() {
+		if (type == 2) {
+			double sum = 0;
+			for (int i = 0; i < struct_powers.size(); ++i) {
+				sum += struct_powers[i];
+			}
+			for (int i = 0; i < struct_powers.size(); ++i) {
+				struct_powers[i] /= sum;
+			}
+			return;
+		}
 		double total_power_1 = 0;
 		double total_power_2 = 0;
 		total_power_1 += edge_power;
@@ -236,6 +270,13 @@ struct Hereditary {
 	}
 
 	void variation(double range_min, double range_max) {
+		if (type == 2) {
+			for (int i = 0; i < struct_powers.size(); ++ i){
+				struct_powers[i] *= get_range_rand(range_min, range_max);
+			}
+			set();
+			return;
+		}
 		move_initial_power *= get_range_rand(range_min, range_max);
 		move_diff_power *= get_range_rand(range_min, range_max);
 		corner_power *= get_range_rand(range_min, range_max);
@@ -311,6 +352,102 @@ Hereditary* get_hereditary(string filename = "") {
 	return initial_her;
 }
 
+void structvar_initial() {
+	bool need_rewrite = false;
+	for (int i = 0; i < var_lists.size(); ++i) {
+		if (struct_vars.size() <= i) {
+			struct_vars.push_back(vector<int>());
+		}
+		if (struct_times.size() <= i) {
+			struct_times.push_back(vector<int>());
+		}
+		struct_vars[i].clear();
+		struct_times[i].clear();
+		ifstream struct_file;
+		int var_size = var_lists[i][0].size();
+
+		string filename = "struct/";
+		filename += to_string(i);
+		filename += ".txt";
+		struct_file.open(filename);
+		if (struct_file.is_open()) {
+			for (int j = 0; j < pow(3, var_size); ++j) {
+				int _temp;
+				struct_file >> _temp;
+				struct_vars[i].push_back(_temp);
+			}
+			struct_file.close();
+		}
+		else {
+			struct_file.close();
+			need_rewrite = true;
+			for (int j = 0; j < pow(3, var_size); ++j) {
+				struct_vars[i].push_back(0);
+			}
+		}
+
+		filename = "struct/t_";
+		filename += to_string(i);
+		filename += ".txt";
+		struct_file.open(filename);
+		if (struct_file.is_open()) {
+			for (int j = 0; j < pow(3, var_size); ++j) {
+				int _temp;
+				struct_file >> _temp;
+				struct_times[i].push_back(_temp);
+			}
+			struct_file.close();
+		}
+		else {
+			struct_file.close();
+			need_rewrite = true;
+			for (int j = 0; j < pow(3, var_size); ++j) {
+				struct_times[i].push_back(0);
+			}
+		}
+	}
+	// move
+	move_var.clear();
+	move_times.clear();
+	ifstream struct_file;
+	struct_file.open("struct/move.txt");
+	if (struct_file.is_open()) {
+		for (int j = 0; j < 3600; ++j) {
+			int _temp;
+			struct_file >> _temp;
+			move_var.push_back(_temp);
+		}
+		struct_file.close();
+	}
+	else {
+		struct_file.close();
+		need_rewrite = true;
+		for (int j = 0; j < 3600; ++j) {
+			move_var.push_back(0);
+		}
+	}
+	struct_file.open("struct/t_move.txt");
+	if (struct_file.is_open()) {
+		for (int j = 0; j < 3600; ++j) {
+			int _temp;
+			struct_file >> _temp;
+			move_times.push_back(_temp);
+		}
+		struct_file.close();
+	}
+	else {
+		struct_file.close();
+		need_rewrite = true;
+		for (int j = 0; j < 3600; ++j) {
+			move_times.push_back(0);
+		}
+	}
+
+	if (need_rewrite) {
+		struct_write();
+	}
+}
+
 struct Board {
 	double alpha;
 	double beta;
@@ -335,7 +472,6 @@ struct Board {
 		onboard(upleft+1, upleft) = -white;
 		search_depth = -1;
 		herediatry = new Hereditary;
-		structvar_initial();
 	}
 	Board(Hereditary* her, bool bot_first = false) {
 		alpha = SHRT_MIN;
@@ -352,7 +488,6 @@ struct Board {
 		onboard(upleft + 1, upleft) = -white;
 		search_depth = -1;
 		herediatry = her;
-		structvar_initial();
 	}
 	Board(Board* b) {
 		alpha = b->alpha;
@@ -362,101 +497,6 @@ struct Board {
 		is_bot_first = b->is_bot_first;
 		search_depth = b->search_depth;
 		herediatry = b->herediatry;
-	}
-	void structvar_initial() {
-		bool need_rewrite = false;
-		for (int i = 0; i < var_lists.size(); ++i) {
-			if (struct_vars.size() <= i) {
-				struct_vars.push_back(vector<int>());
-			}
-			if (struct_times.size() <= i) {
-				struct_times.push_back(vector<int>());
-			}
-			struct_vars[i].clear();
-			struct_times[i].clear();
-			ifstream struct_file;
-			int var_size = var_lists[i][0].size();
-			
-			string filename = "struct/";
-			filename += to_string(i);
-			filename += ".txt";
-			struct_file.open(filename);
-			if (struct_file.is_open()) {
-				for (int j = 0; j < pow(3, var_size); ++j) {
-					int _temp;
-					struct_file >> _temp;
-					struct_vars[i].push_back(_temp);
-				}
-				struct_file.close();
-			}
-			else {
-				struct_file.close();
-				need_rewrite = true;
-				for (int j = 0; j < pow(3, var_size); ++j) {
-					struct_vars[i].push_back(0);
-				}
-			}
-
-			filename = "struct/t_";
-			filename += to_string(i);
-			filename += ".txt";
-			struct_file.open(filename);
-			if (struct_file.is_open()) {
-				for (int j = 0; j < pow(3, var_size); ++j) {
-					int _temp;
-					struct_file >> _temp;
-					struct_times[i].push_back(_temp);
-				}
-				struct_file.close();
-			}
-			else {
-				struct_file.close();
-				need_rewrite = true;
-				for (int j = 0; j < pow(3, var_size); ++j) {
-					struct_times[i].push_back(0);
-				}
-			}
-		}
-		// move
-		move_var.clear();
-		move_times.clear();
-		ifstream struct_file;
-		struct_file.open("struct/move.txt");
-		if (struct_file.is_open()) {
-			for (int j = 0; j < 3600; ++j) {
-				int _temp;
-				struct_file >> _temp;
-				move_var.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int j = 0; j < 3600; ++j) {
-				move_var.push_back(0);
-			}
-		}
-		struct_file.open("struct/t_move.txt");
-		if (struct_file.is_open()) {
-			for (int j = 0; j < 3600; ++j) {
-				int _temp;
-				struct_file >> _temp;
-				move_times.push_back(_temp);
-			}
-			struct_file.close();
-		}
-		else {
-			struct_file.close();
-			need_rewrite = true;
-			for (int j = 0; j < 3600; ++j) {
-				move_times.push_back(0);
-			}
-		}
-
-		if (need_rewrite) {
-			struct_write();
-		}
 	}
 	// x,y's range: 0~BOARD_SIZE
 	short& onboard(int x, int y) {
@@ -864,6 +904,7 @@ struct Board {
 //#pragma omp parallel for
 		for (int i = 0; i < var_lists.size(); ++i) {
 			double _result = 0;
+			double power = (herediatry->type != 2) ? 1 : herediatry->struct_powers[i+1];
 			vector< vector<int> > var_list = var_lists[i];
 			for (int j = 0; j < var_list.size(); ++j) {
 				int id = 0;
@@ -871,8 +912,9 @@ struct Board {
 					id *= 3;
 					id += board[var_list[j][k]] + 1;
 				}
-				_result += (double)struct_vars[i][id] / (struct_times[i][id] == 0 ? 1 : struct_times[i][id]);
+				_result += (double)struct_vars[i][id] / (struct_times[i][id] == 0 ? 1 : struct_times[i][id]) * power;
 			}
+			_result /= var_list.size();
 #pragma omp atomic
 			result += _result;
 		}
@@ -889,10 +931,11 @@ struct Board {
 				bot_move_power = move_power_2;
 				enemy_move_power = move_power_1;
 			}
+			int power = (herediatry->type != 2) ? 1 : herediatry->struct_powers[0];
 			int move_id = (current_stage) * 60 + bot_move_power;
-			result += (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]);
+			result += (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]) * power;
 			move_id = current_stage * 60 + enemy_move_power;
-			result -= (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]);
+			result -= (double)move_var[move_id] / (move_times[move_id] == 0 ? 1 : move_times[move_id]) * power;
 		}
 		return result;
 	}
@@ -1015,6 +1058,7 @@ int pvc() {
 		}
 		string your = (mode) ? WHITE_PIECE : BLACK_PIECE;
 		your = "(" + your + ")";
+		structvar_initial();
 		Board* current = new Board(initial_her,mode == 1);
 		bool use_struct = false;
 		int _ip = -1;
@@ -1165,7 +1209,7 @@ int pvc() {
 	return 0;
 }
 
-void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false, bool first_struct = false, bool second_struct = false) {
+void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = false) {
 	her_first->total_play += 2;
 	her_second->total_play += 2;
 	Board* first_board = new Board(her_first, true);
@@ -1189,7 +1233,8 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 				string piece = (is_on_first) ? BLACK_PIECE : WHITE_PIECE;
 				cout << "当前执棋：" << piece << endl;
 			}
-			short step = current_board->bot_on_ideal_step(debug, (is_on_first && first_struct) || (!is_on_first && second_struct), true);
+			short step = current_board->bot_on_ideal_step(debug, (is_on_first && first_board->herediatry->type==2) 
+				|| (!is_on_first && second_board->herediatry->type == 2), true);
 			next_board->new_step(step);
 			Board* copy = new Board(current_board);
 			if (is_on_first) {
@@ -1220,8 +1265,8 @@ void play_with_her(Hereditary* her_first, Hereditary* her_second, bool debug = f
 		is_on_first = !is_on_first;
 	}
 	// calculate score
-	double first_score = first_board->get_self_value(first_struct).second / FINAL_POWER;
-	double second_score = second_board->get_self_value(second_struct).second / FINAL_POWER;
+	double first_score = first_board->get_self_value(false).second / FINAL_POWER;
+	double second_score = second_board->get_self_value(false).second / FINAL_POWER;
 	delete first_board;
 	delete second_board;
 	if (first_score * second_score > 0) {
@@ -1288,12 +1333,9 @@ int hereditary() {
 		ofile.close();
 		return 0;
 	}
-	ofile << "Times,type,move_initial_power,move_diff_power,";
-	ofile << "corner_power,edge_power,near_corner_power,near_edge_power,";
-	ofile << "stable_power,fake_stable_power,unstable_power,";
-	ofile << "non_current_move_power,importance_power,win_rate,total_battle" << endl;
+	ofile << "Times,type,var0,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12,win_rate,total_battle" << endl;
 	Hereditary* initial_her = get_hereditary();
-	Hereditary* initial_her_2 = get_hereditary("Hereditary_t1.txt");
+	Hereditary* initial_her_2 = get_hereditary();
 
 	// initial
 	vector<Hereditary*> current_hereditary;
@@ -1313,6 +1355,7 @@ int hereditary() {
 	// begin
 	int loop_times = 0;
 	while (loop_times++ < 10000) {
+		structvar_initial();
 		cout << endl << "Running the " << loop_times << " times.." << endl;
 		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
 		// play with each other
@@ -1330,10 +1373,18 @@ int hereditary() {
 		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
 		Hereditary* best_one = current_hereditary[0];
 		ofile << loop_times << "," << best_one->type << ",";
-		ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
-		ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
-		ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
-		ofile << best_one->non_current_move_power << "," << best_one->importance_power << "," << best_one->win_rate() << "," << best_one->total_play << endl;
+		if (best_one->type != 2) {
+			ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
+			ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
+			ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
+			ofile << best_one->non_current_move_power << "," << best_one->importance_power << "," << best_one->win_rate() << "," << best_one->total_play << endl;
+		}
+		else {
+			for (int i = 0; i < best_one->struct_powers.size(); ++i) {
+				ofile << best_one->struct_powers[i] << ",";
+			}
+			ofile << best_one->win_rate() << "," << best_one->total_play << endl;
+		}
 		// drop
 		delete current_hereditary[max_her - 2];
 		delete current_hereditary[max_her - 1];
@@ -1353,6 +1404,7 @@ int hereditary() {
 				this_one->total_win = 0;
 			}
 		}
+		struct_write();
 	}
 	
 	ofile.close();
@@ -1365,15 +1417,15 @@ int cvc() {
 	Hereditary* her_1 = new Hereditary();
 	int mode = -1;
 	while (true) {
-		string filename;
+		string filename = "";
 		cout << "请输入2号电脑需要读取的数据所在的文件：";
-		cin >> filename;
+		//cin >> filename;
 		Hereditary* her_2 = new Hereditary(filename);
-		play_with_her(her_1, her_2, true, false, true);
-		play_with_her(her_2, her_1, true, true, false);
+		play_with_her(her_1, her_2, true);
+		play_with_her(her_2, her_1, true);
 		struct_write();
 		cout << endl << "结果：\n1号电脑胜：" << her_1->total_win << endl << "2号电脑胜：" << her_2->total_win << endl;
-		mode = -1;
+		mode = 1;
 		while (mode == -1) {
 			cout << "是否重新开始？(0=否，1=是)";
 			cin >> mode;
@@ -1401,6 +1453,7 @@ int struct_train(Board* board, bool debug = true) {
 	int times = 0;
 	while (times++<10000) {
 		vector<pair<Board*,short> > records;
+		structvar_initial();
 		Board* run_board = new Board(board);
 		while (true) {
 			if (debug) {
@@ -1457,6 +1510,7 @@ int struct_train_main() {
 	int times = 0;
 	while (times++ < 10000) {
 		int rand_spector = rand() % (thread_size);
+		structvar_initial();
 		Board* run_board = new Board(true);
 #pragma omp parallel for
 		for (int i = 0; i < thread_size; ++i) {
