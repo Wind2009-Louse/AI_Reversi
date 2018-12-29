@@ -19,6 +19,7 @@ using namespace std;
 #define BOARD_SIZE 8
 #define FINAL_POWER 1
 #define HEREDITART_PER_THREAD 3
+#define DELETE_PRE_TIMES 3
 
 #define SEARCH_MAX_DEPTH 5 // search depth
 #define SEARCH_MAX_DEPTH_END 10 // search depth while at end
@@ -307,7 +308,7 @@ bool hereditary_cmp(Hereditary* h1, Hereditary* h2) {
 };
 
 Hereditary* get_hereditary(string filename = "") {
-	Hereditary* initial_her = new Hereditary(filename);
+	Hereditary* initial_her;
 	int mode = -1;
 	while (mode == -1) {
 		cout << "默认遗传子(0) / 设定遗传子(1）:";
@@ -324,31 +325,10 @@ Hereditary* get_hereditary(string filename = "") {
 	}
 	// set Hereditary
 	if (mode == 1) {
-		cout << "type:";
-		cin >> initial_her->type;
-		cout << "move_initial_power:";
-		cin >> initial_her->move_initial_power;
-		cout << "move_diff_power:";
-		cin >> initial_her->move_diff_power;
-		cout << "corner_power:";
-		cin >> initial_her->corner_power;
-		cout << "edge_power";
-		cin >> initial_her->edge_power;
-		cout << "near_corner_power:";
-		cin >> initial_her->near_corner_power;
-		cout << "near_edge_power:";
-		cin >> initial_her->near_edge_power;
-		cout << "stable_power:";
-		cin >> initial_her->stable_power;
-		cout << "fake_stable_power:";
-		cin >> initial_her->fake_stable_power;
-		cout << "unstable_power:";
-		cin >> initial_her->unstable_power;
-		cout << "non_current_move_power:";
-		cin >> initial_her->non_current_move_power;
-		cout << "importance_power:";
-		cin >> initial_her->importance_power;
+		cout << "请输入文件名：";
+		cin >> filename;
 	}
+	initial_her = new Hereditary(filename);
 	return initial_her;
 }
 
@@ -882,10 +862,12 @@ struct Board {
 		return result;
 	}
 	double calculate_struct() {
+		// stage check
 		int current_stage = 0;
 		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i) {
 			if (board[i] == 0) current_stage++;
 		}
+		// end
 		if (current_stage == 0) {
 			int value = 0;
 			bool has_bot = false;
@@ -899,9 +881,10 @@ struct Board {
 			else if (!has_player) value = -BOARD_SIZE*BOARD_SIZE;
 			return value*FINAL_POWER;
 		}
+		// multiadd
 		double result = 0;
 		// board struct
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < var_lists.size(); ++i) {
 			double _result = 0;
 			double power = (herediatry->type != 2) ? 1 : herediatry->struct_powers[i+1];
@@ -1061,7 +1044,7 @@ int pvc() {
 		structvar_initial();
 		Board* current = new Board(initial_her,mode == 1);
 		bool use_struct = false;
-		int _ip = -1;
+		int _ip = (initial_her->type == 2) ? 1 : -1;
 		while (_ip == -1) {
 			cout << "请选择评估方式(0=全局, 1=模块):";
 			cin >> _ip;
@@ -1371,31 +1354,47 @@ int hereditary() {
 		}
 		// count
 		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
-		Hereditary* best_one = current_hereditary[0];
-		ofile << loop_times << "," << best_one->type << ",";
-		if (best_one->type != 2) {
-			ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
-			ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
-			ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
-			ofile << best_one->non_current_move_power << "," << best_one->importance_power << "," << best_one->win_rate() << "," << best_one->total_play << endl;
-		}
-		else {
-			for (int i = 0; i < best_one->struct_powers.size(); ++i) {
-				ofile << best_one->struct_powers[i] << ",";
+
+		vector<Hereditary*> best_list;
+		for (int i = 0; i < current_hereditary.size(); ++i) {
+			if (current_hereditary[i]->total_play > 8) {
+				best_list.push_back(current_hereditary[i]);
+				if (best_list.size() >= DELETE_PRE_TIMES) {
+					break;
+				}
 			}
-			ofile << best_one->win_rate() << "," << best_one->total_play << endl;
 		}
-		// drop
-		delete current_hereditary[max_her - 2];
-		delete current_hereditary[max_her - 1];
-		current_hereditary.pop_back();
-		current_hereditary.pop_back();
-		Hereditary* small_one = new Hereditary(best_one);
-		Hereditary* huge_one = new Hereditary(best_one);
-		small_one->small_variation();
-		huge_one->huge_variation();
-		current_hereditary.push_back(small_one);
-		current_hereditary.push_back(huge_one);
+		if (best_list.size() >= DELETE_PRE_TIMES) {
+			Hereditary* best_one = best_list[0];
+			ofile << loop_times << "," << best_one->type << ",";
+			if (best_one->type != 2) {
+				ofile << best_one->move_initial_power << "," << best_one->move_diff_power << ",";
+				ofile << best_one->corner_power << "," << best_one->edge_power << "," << best_one->near_corner_power << "," << best_one->near_edge_power << ",";
+				ofile << best_one->stable_power << "," << best_one->fake_stable_power << "," << best_one->unstable_power << ",";
+				ofile << best_one->non_current_move_power << "," << best_one->importance_power << ",,," << best_one->win_rate() << "," << best_one->total_play << endl;
+			}
+			else {
+				for (int i = 0; i < best_one->struct_powers.size(); ++i) {
+					ofile << best_one->struct_powers[i] << ",";
+				}
+				ofile << best_one->win_rate() << "," << best_one->total_play << endl;
+			}
+			// drop
+			if (best_list[DELETE_PRE_TIMES - 1]->win_rate() > current_hereditary[max_her - DELETE_PRE_TIMES * 2]->win_rate()) {
+				for (int i = 0; i < DELETE_PRE_TIMES * 2; ++i) {
+					delete current_hereditary[max_her - 1];
+					current_hereditary.pop_back();
+				}
+				for (int i = 0; i < DELETE_PRE_TIMES; ++i) {
+					Hereditary* small_one = new Hereditary(best_list[i]);
+					Hereditary* huge_one = new Hereditary(best_list[i]);
+					small_one->small_variation();
+					huge_one->huge_variation();
+					current_hereditary.push_back(small_one);
+					current_hereditary.push_back(huge_one);
+				}
+			}
+		}
 		// update old ones
 		for (int i = 0; i < current_hereditary.size(); ++i) {
 			Hereditary* this_one = current_hereditary[i];
@@ -1417,9 +1416,10 @@ int cvc() {
 	Hereditary* her_1 = new Hereditary();
 	int mode = -1;
 	while (true) {
+		structvar_initial();
 		string filename = "";
 		cout << "请输入2号电脑需要读取的数据所在的文件：";
-		//cin >> filename;
+		cin >> filename;
 		Hereditary* her_2 = new Hereditary(filename);
 		play_with_her(her_1, her_2, true);
 		play_with_her(her_2, her_1, true);
