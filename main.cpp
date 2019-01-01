@@ -1294,6 +1294,7 @@ int hereditary() {
 	int max_her = omp_get_max_threads() * HEREDITART_PER_THREAD;
 	cout << "Create " << max_her << " hereditarys." << endl;
 	stringstream ss;
+	// output file
 	ofstream ofile;
 	int file_index = 0;
 	while (true) {
@@ -1352,9 +1353,8 @@ int hereditary() {
 			play_with_her(current_hereditary[i * 3], current_hereditary[i * 3 + 2], (i == rand_spector));
 			play_with_her(current_hereditary[i * 3 + 2], current_hereditary[i * 3], (i == rand_spector));
 		}
-		// count
 		sort(current_hereditary.begin(), current_hereditary.end(), hereditary_cmp);
-
+		// get best ones
 		vector<Hereditary*> best_list;
 		for (int i = 0; i < current_hereditary.size(); ++i) {
 			if (current_hereditary[i]->total_play > 8) {
@@ -1364,7 +1364,9 @@ int hereditary() {
 				}
 			}
 		}
+		// if there're enough hereditarys
 		if (best_list.size() >= DELETE_PRE_TIMES) {
+			// output the best one
 			Hereditary* best_one = best_list[0];
 			ofile << loop_times << "," << best_one->type << ",";
 			if (best_one->type != 2) {
@@ -1379,12 +1381,14 @@ int hereditary() {
 				}
 				ofile << best_one->win_rate() << "," << best_one->total_play << endl;
 			}
-			// drop
+			// if bad enough
 			if (best_list[DELETE_PRE_TIMES - 1]->win_rate() > current_hereditary[max_her - DELETE_PRE_TIMES * 2]->win_rate()) {
+				// drop
 				for (int i = 0; i < DELETE_PRE_TIMES * 2; ++i) {
 					delete current_hereditary[max_her - 1];
 					current_hereditary.pop_back();
 				}
+				// create new ones
 				for (int i = 0; i < DELETE_PRE_TIMES; ++i) {
 					Hereditary* small_one = new Hereditary(best_list[i]);
 					Hereditary* huge_one = new Hereditary(best_list[i]);
@@ -1405,7 +1409,6 @@ int hereditary() {
 		}
 		struct_write();
 	}
-	
 	ofile.close();
 	system("pause");
 	return 0;
